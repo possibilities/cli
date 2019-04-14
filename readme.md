@@ -1,6 +1,6 @@
 # CLI helpers
 
-A small, opinionated library of helpers for creating CLI applications in a declarative way.
+A small, opinionated library of helpers for creating CLI applications in a declarative way
 
 ## Principles
 
