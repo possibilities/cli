@@ -102,8 +102,8 @@ const createShowUsage = (
       .forEach(({ name, label, commands }) => {
         appConsole.group(`${config.defaultGroup === name ? 'Base' : label}`)
         const commandLabel = config.defaultGroup === name
-          ? `  ${binName}`
-          : `  ${binName} ${name}`
+          ? `${binName}`
+          : `${binName} ${name}`
         showCommands(commandLabel, commands, appConsole)
         appConsole.groupEnd()
       })
