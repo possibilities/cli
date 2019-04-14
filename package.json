@@ -2,9 +2,10 @@
   "name": "@possibilities/cli",
   "version": "0.0.0",
   "license": "MIT",
+  "main": "./src/index.js",
   "scripts": {
     "lint": "standard",
-    "test": "ava --verbose --serial"
+    "test": "ava src --verbose --serial"
   },
   "dependencies": {
     "lodash": "^4.17.11"

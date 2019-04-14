@@ -1,49 +1,8 @@
 import test from 'ava'
-import createCli from './index'
 import dedent from 'dedent'
+const { testCli } = require('./_helpers.js')
 
 const echoArgsHandler = (args, positional) => ({ args, positional })
-
-const indentBy = (data, depth) => {
-  let str = ''
-  while (depth) {
-    depth = depth - 1
-    str = str = '  '
-  }
-  return str + data
-}
-
-const testCli = async (command, config, handlers) => {
-  // Simulate the logger used internally so that we can check out the
-  // string value of all outputs
-  let depth = 0
-  let output = []
-  const logger = {
-    info: data => {
-      output.push(indentBy(data || '', depth))
-    },
-    group: data => {
-      output.push(indentBy(data || '', depth))
-      depth = depth + 1
-    },
-    error: data => output.push(indentBy(data || '', depth)),
-    groupEnd: data => {
-      depth = depth - 1
-    }
-  }
-  let exitCode
-  const response = await createCli(config, {
-    handlers,
-    appProcess: {
-      exit: code => {
-        exitCode = code
-      },
-      argv: command.split(' ')
-    },
-    appConsole: logger
-  })
-  return { response, exitCode, output: output.join('\n').trim() }
-}
 
 test('runs', async t => {
   t.plan(1)
@@ -66,14 +25,14 @@ const handlersWithCommands = {
 
 test('runs command', async t => {
   t.plan(4)
-  const { response: response1 }  = await testCli(
+  const { response: response1 } = await testCli(
     'node example-app show',
     configWithCommands,
     handlersWithCommands
   )
   t.deepEqual(response1.args, {})
   t.deepEqual(response1.positional, { commands: ['show'] })
-  const { response: response2 }  = await testCli(
+  const { response: response2 } = await testCli(
     'node example-app list',
     configWithCommands,
     handlersWithCommands
@@ -219,7 +178,7 @@ test('runs with string option', async t => {
 test('runs with string option with default', async t => {
   t.plan(1)
   const { response } = await testCli(
-   'node example-app',
+    'node example-app',
     {
       options: [{
         name: 'foo',
@@ -640,7 +599,7 @@ test('runs command in default group', async t => {
 test('runs default command in default group', async t => {
   t.plan(2)
   const { response } = await testCli(
-   'node example-app',
+    'node example-app',
     {
       defaultGroup: 'users',
       groups: [{
@@ -1747,8 +1706,6 @@ test('errors when multiple required options are missing for command in command g
   t.is(exitCode, 1)
   t.is(expected, output)
 })
-
-test.todo('loads handlers from filesystem')
 
 test.todo('shows help with long descriptions and names')
 
