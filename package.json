@@ -5,7 +5,7 @@
   "main": "./src/index.js",
   "scripts": {
     "lint": "standard",
-    "test": "ava src --verbose --serial"
+    "test": "ava src/tests --verbose --serial"
   },
   "dependencies": {
     "lodash": "^4.17.11"
