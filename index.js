@@ -17,8 +17,10 @@ const invokeCommand = async (
   appConsole
 ) => {
   const { options, ...context } = args
-  // TODO omit/pick based on config
-  return handler(omit(options, 'help'), context)
+  const systemNames = config.options
+    .filter(o => o.system)
+    .map(o => o.name)
+  return handler(omit(options, systemNames), context)
 }
 
 const parseArgs = argv => {
@@ -271,7 +273,8 @@ const helpOption = {
   name: 'help',
   type: 'boolean',
   description: 'Show usage',
-  default: false
+  default: false,
+  system: true
 }
 
 const prepareConfig = (config, args) => {
