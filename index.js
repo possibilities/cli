@@ -158,7 +158,7 @@ const findApplicableOptions = (config, args) => {
   return options
 }
 
-const coerceInput = (config, args) => {
+const coerceArgs = (config, args) => {
   const normalized = {}
   if (config.options) {
     for (const option of config.options) {
@@ -313,13 +313,13 @@ module.exports = async (
   }
 
   // Input coercion and mangling based on config
-  const coercedInput = coerceInput(appConfig, args)
+  const coercedArg = coerceArgs(appConfig, args)
 
   // Make changes to args and config prior to invoking command
   const {
     args: resolvedArgs,
     config: resolvedConfig
-  } = await resolveInputs(appConfig, coercedInput)
+  } = await resolveInputs(appConfig, coercedArg)
 
   // Show help and exit upon request
   if (resolvedArgs.options.help) {
