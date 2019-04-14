@@ -116,7 +116,7 @@ const coerceBooleanValue = (args, option) => {
 const coerceStringValue = (args, option) =>
   args.options[option.name] || option.default
 
-const reduceOptions = (config, args) => {
+const findActiveOptions = (config, args) => {
   const options = []
   if (config.options) {
     for (const option of config.options) {
@@ -234,7 +234,7 @@ const helpOption = {
 const prepareConfig = (config, args) => {
   // Build up a list of possible options and include common items such
   // as `--help` and `--version`
-  const appOptions = reduceOptions(config, args)
+  const appOptions = findActiveOptions(config, args)
   const options = [ ...appOptions, helpOption ]
 
   // Build a list of expected positional items.
