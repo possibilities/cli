@@ -1,4 +1,4 @@
-# Flowerops CLI
+# CLI helpers
 
 A small, opinionated library of helpers for creating CLI applications of all types in a declarative way.
 
