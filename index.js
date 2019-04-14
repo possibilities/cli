@@ -120,11 +120,7 @@ const findApplicableOptions = (config, args) => {
   const options = []
   if (config.options) {
     for (const option of config.options) {
-      if (option.type === 'boolean') {
-        options.push(option)
-      } else if (option.type === 'string') {
-        options.push(option)
-      }
+      options.push(option)
     }
   }
   if (config.commands) {
@@ -132,11 +128,7 @@ const findApplicableOptions = (config, args) => {
     for (const command of config.commands) {
       if (!command.options || command.name !== commandName) continue
       for (const option of command.options) {
-        if (option.type === 'boolean') {
-          options.push(option)
-        } else if (option.type === 'string') {
-          options.push(option)
-        }
+        options.push(option)
       }
     }
   }
@@ -148,11 +140,7 @@ const findApplicableOptions = (config, args) => {
       for (const command of group.commands) {
         if (!command.options || command.name !== commandName) continue
         for (const option of command.options) {
-          if (option.type === 'boolean') {
-            options.push(option)
-          } else if (option.type === 'string') {
-            options.push(option)
-          }
+          options.push(option)
         }
       }
     }
