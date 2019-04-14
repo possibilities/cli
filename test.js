@@ -379,7 +379,6 @@ test('shows help with commands', async t => {
   const { output, exitCode } = await testCli(
     'node example-app --help',
     {
-      defaultCommand: 'show',
       commands: [
         { name: 'show', description: 'Show things' },
         { name: 'list', description: 'List things' }
@@ -393,7 +392,7 @@ test('shows help with commands', async t => {
   Usage: example-app <command> [options]
 
   Commands
-    example-app show  Show things (default)
+    example-app show  Show things
     example-app list  List things
 
   Option

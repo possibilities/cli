@@ -161,46 +161,12 @@ const resolveHandler = (args, handlers) => {
 
 const resolveInputs = (config, args) => {
   const coercedOptions = {}
-  if (config.options) {
-    for (const option of config.options) {
-      if (option.type === 'boolean') {
-        coercedOptions[option.name] = coerceBooleanValue(args, option)
-      } else if (option.type === 'string') {
-        if (!has(args.options, option.name) && !option.default) continue
-        coercedOptions[option.name] = coerceStringValue(args, option)
-      }
-    }
-  }
-  if (config.commands) {
-    const commandName = args.commands[0]
-    for (const command of config.commands) {
-      if (!command.options || command.name !== commandName) continue
-      for (const option of command.options) {
-        if (option.type === 'boolean') {
-          coercedOptions[option.name] = coerceBooleanValue(args, option)
-        } else if (option.type === 'string') {
-          if (!has(args.options, option.name)) continue
-          coercedOptions[option.name] = coerceStringValue(args, option)
-        }
-      }
-    }
-  }
-  if (config.groups) {
-    const groupName = args.commands[0]
-    const commandName = args.commands[1]
-    for (const group of config.groups) {
-      if (group.name !== groupName) continue
-      for (const command of group.commands) {
-        if (!command.options || command.name !== commandName) continue
-        for (const option of command.options) {
-          if (option.type === 'boolean') {
-            coercedOptions[option.name] = coerceBooleanValue(args, option)
-          } else if (option.type === 'string') {
-            if (!has(args.options, option.name)) continue
-            coercedOptions[option.name] = coerceStringValue(args, option)
-          }
-        }
-      }
+  for (const option of config.options) {
+    if (option.type === 'boolean') {
+      coercedOptions[option.name] = coerceBooleanValue(args, option)
+    } else if (option.type === 'string') {
+      if (!has(args.options, option.name) && !option.default) continue
+      coercedOptions[option.name] = coerceStringValue(args, option)
     }
   }
 
