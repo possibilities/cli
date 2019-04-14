@@ -286,71 +286,76 @@ const prepareConfig = (config, args) => {
   return { ...config, positional, options }
 }
 
-module.exports = async (config, handlers) => {
-  return async (appProcess = process, appConsole = console) => {
-    const args = parseArgs(appProcess.argv)
-    const appConfig = prepareConfig(config, args)
+module.exports = async (
+  config,
+  {
+    handlers,
+    appProcess = process,
+    appConsole = console
+  }
+) => {
+  const args = parseArgs(appProcess.argv)
+  const appConfig = prepareConfig(config, args)
 
-    // The "show usage" function returns different output at differnet
-    // stages. This initial helper displays data from the raw args and config.
-    const showPreValidationUsage = createShowUsage(
-      args,
-      appConfig,
-      appProcess,
-      appConsole
-    )
+  // The "show usage" function returns different output at differnet
+  // stages. This initial helper displays data from the raw args and config.
+  const showPreValidationUsage = createShowUsage(
+    args,
+    appConfig,
+    appProcess,
+    appConsole
+  )
 
-    // Make an inital pass at validation
-    const preCoercionErrors = preCoercionValidation(appConfig, args)
-    if (preCoercionErrors.length) {
-      return showPreValidationUsage(preCoercionErrors)
-    }
+  // Make an inital pass at validation
+  const preCoercionErrors = preCoercionValidation(appConfig, args)
+  if (preCoercionErrors.length) {
+    return showPreValidationUsage(preCoercionErrors)
+  }
 
-    // Input coercion and mangling based on config
-    const coercedInput = coerceInput(appConfig, args)
+  // Input coercion and mangling based on config
+  const coercedInput = coerceInput(appConfig, args)
 
-    // Make changes to args and config prior to invoking command
-    const {
-      args: resolvedArgs,
-      config: resolvedConfig
-    } = await resolveInputs(appConfig, coercedInput)
+  // Make changes to args and config prior to invoking command
+  const {
+    args: resolvedArgs,
+    config: resolvedConfig
+  } = await resolveInputs(appConfig, coercedInput)
 
-    // Show help and exit upon request
-    if (resolvedArgs.options.help) {
-      return showPreValidationUsage()
-    }
+  // Show help and exit upon request
+  if (resolvedArgs.options.help) {
+    return showPreValidationUsage()
+  }
 
-    // Create an update helper for showing usuage with resolved args/config
-    const showPostValidationUsage = createShowUsage(
-      resolvedArgs,
+  // Create an update helper for showing usuage with resolved args/config
+  const showPostValidationUsage = createShowUsage(
+    resolvedArgs,
+    resolvedConfig,
+    appProcess,
+    appConsole
+  )
+
+  // Final validion on coerced inputs
+  const postCoercionErrors = validateInputs(resolvedConfig, resolvedArgs)
+  if (postCoercionErrors.length) {
+    return showPostValidationUsage(postCoercionErrors)
+  }
+
+  // Find the handler and invoke it
+  const handler = resolveHandler(resolvedArgs, handlers)
+  try {
+    const response = await invokeCommand(
       resolvedConfig,
+      resolvedArgs,
+      handler,
       appProcess,
       appConsole
     )
-
-    // Final validion on coerced inputs
-    const postCoercionErrors = validateInputs(resolvedConfig, resolvedArgs)
-    if (postCoercionErrors.length) {
-      return showPostValidationUsage(postCoercionErrors)
-    }
-
-    // Find the handler and invoke it
-    const handler = resolveHandler(resolvedArgs, handlers)
-    try {
-      const response = await invokeCommand(
-        resolvedConfig,
-        resolvedArgs,
-        handler,
-        appProcess,
-        appConsole
-      )
-      appProcess.exit(0)
-      // Return is for testing only
-      // TODO console JSON and parse in tests
-      return response
-    } catch (error) {
-      if (args.verbose) appConsole.error(error)
-      return showPostValidationUsage([error])
-    }
+    appProcess.exit(0)
+    // Return is for testing only
+    // TODO console JSON and parse in tests
+    return response
+  } catch (error) {
+    if (args.verbose) appConsole.error(error)
+    return showPostValidationUsage([error])
   }
 }

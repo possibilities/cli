@@ -13,7 +13,7 @@ const indentBy = (data, depth) => {
   return str + data
 }
 
-const invoke = async (runCli, command) => {
+const testCli = async (command, config, handlers) => {
   // Simulate the logger used internally so that we can check out the
   // string value of all outputs
   let depth = 0
@@ -32,47 +32,63 @@ const invoke = async (runCli, command) => {
     }
   }
   let exitCode
-  const response = await runCli({
-    exit: code => {
-      exitCode = code
+  const response = await createCli(config, {
+    handlers,
+    appProcess: {
+      exit: code => {
+        exitCode = code
+      },
+      argv: command.split(' ')
     },
-    argv: command.split(' ')
-  }, logger)
+    appConsole: logger
+  })
   return { response, exitCode, output: output.join('\n').trim() }
 }
 
 test('runs', async t => {
   t.plan(1)
-  const runCli = await createCli({}, echoArgsHandler)
   const { response } =
-    await invoke(runCli, 'node example-app')
+    await testCli('node example-app', {}, echoArgsHandler)
   t.deepEqual(response.args, {})
 })
 
 test('runs command', async t => {
   t.plan(4)
-  const runCli = await createCli({
-    commands: [
-      { name: 'show' },
-      { name: 'list' }
-    ]
-  }, {
-    show: echoArgsHandler,
-    list: echoArgsHandler
-  })
-  const { response: response1 } =
-    await invoke(runCli, 'node example-app show')
+  const { response: response1 }  = await testCli(
+    'node example-app show',
+    {
+      commands: [
+        { name: 'show' },
+        { name: 'list' }
+      ]
+    },
+    {
+      show: echoArgsHandler,
+      list: echoArgsHandler
+    }
+  )
   t.deepEqual(response1.args, {})
   t.deepEqual(response1.positional, { commands: ['show'] })
-  const { response: response2 } =
-    await invoke(runCli, 'node example-app list')
+  const { response: response2 }  = await testCli(
+    'node example-app list',
+    {
+      commands: [
+        { name: 'show' },
+        { name: 'list' }
+      ]
+    },
+    {
+      show: echoArgsHandler,
+      list: echoArgsHandler
+    }
+  )
   t.deepEqual(response2.args, {})
   t.deepEqual(response2.positional, { commands: ['list'] })
 })
 
 test('runs command in command group', async t => {
   t.plan(4)
-  const runCli = await createCli({
+  const config = {
     groups: [{
       name: 'users',
       label: 'Users',
@@ -95,7 +111,8 @@ test('runs command in command group', async t => {
         { name: 'break', description: 'Break things' }
       ]
     }]
-  }, {
+  }
+  const handlers = {
     users: {
       show: echoArgsHandler,
       list: echoArgsHandler
@@ -104,196 +121,220 @@ test('runs command in command group', async t => {
       fix: echoArgsHandler,
       break: echoArgsHandler
     }
-  })
-  const { response: response1 } =
-    await invoke(runCli, 'node example-app users show')
+  }
+  const { response: response1 } = await testCli(
+    'node example-app users show',
+    config,
+    handlers
+  )
   t.deepEqual(response1.args, {})
   t.deepEqual(response1.positional.commands, ['users', 'show'])
 
-  const { response: response2 } =
-    await invoke(runCli, 'node example-app util break')
+  const { response: response2 } = await testCli(
+    'node example-app util break',
+    config,
+    handlers
+  )
+
   t.deepEqual(response2.args, {})
   t.deepEqual(response2.positional, { commands: ['util', 'break'] })
 })
 
 test('runs with option for command', async t => {
   t.plan(2)
-  const runCli = await createCli({
-    commands: [
-      {
-        name: 'show',
-        description: 'Show things',
-        options: [{
-          name: 'foo',
-          type: 'string'
-        }]
-      }
-    ]
-  }, echoArgsHandler)
-  const { response } =
-    await invoke(runCli, 'node example-app show --foo bar1')
+  const { response } = await testCli(
+    'node example-app show --foo bar1',
+    {
+      commands: [
+        {
+          name: 'show',
+          description: 'Show things',
+          options: [{
+            name: 'foo',
+            type: 'string'
+          }]
+        }
+      ]
+    },
+    echoArgsHandler
+  )
   t.deepEqual(response.positional.commands, ['show'])
   t.deepEqual(response.args, { foo: 'bar1' })
 })
 
 test('runs with option for command in command group', async t => {
   t.plan(2)
-  const runCli = await createCli({
-    groups: [{
-      name: 'users',
-      label: 'Users',
-      commands: [
-        { name: 'show', description: 'Show user' },
-        {
-          name: 'list',
-          description: 'List users',
-          options: [{
-            name: 'foo',
-            type: 'string'
-          }]
-        }
-      ]
-    }, {
-      name: 'util',
-      label: 'Utilities',
-      commands: [
-        { name: 'fix', description: 'Fix things' },
-        { name: 'break', description: 'Break things' }
-      ]
-    }]
-  }, {
-    users: {
-      show: echoArgsHandler,
-      list: echoArgsHandler
+  const { response } = await testCli(
+    'node example-app users list --foo bar2',
+    {
+      groups: [{
+        name: 'users',
+        label: 'Users',
+        commands: [
+          { name: 'show', description: 'Show user' },
+          {
+            name: 'list',
+            description: 'List users',
+            options: [{
+              name: 'foo',
+              type: 'string'
+            }]
+          }
+        ]
+      }, {
+        name: 'util',
+        label: 'Utilities',
+        commands: [
+          { name: 'fix', description: 'Fix things' },
+          { name: 'break', description: 'Break things' }
+        ]
+      }]
     },
-    util: {
-      fix: echoArgsHandler,
-      break: echoArgsHandler
+    {
+      users: {
+        show: echoArgsHandler,
+        list: echoArgsHandler
+      },
+      util: {
+        fix: echoArgsHandler,
+        break: echoArgsHandler
+      }
     }
-  })
-  const { response } =
-    await invoke(runCli, 'node example-app users list --foo bar2')
+  )
   t.deepEqual(response.positional.commands, ['users', 'list'])
   t.deepEqual(response.args, { foo: 'bar2' })
 })
 
 test('runs with string option', async t => {
   t.plan(1)
-  const runCli = await createCli({
-    options: [{
-      name: 'foo',
-      type: 'string'
-    }]
-  }, echoArgsHandler)
-  const { response } =
-    await invoke(runCli, 'node example-app --foo bar')
+  const { response } = await testCli(
+    'node example-app --foo bar',
+    {
+      options: [{
+        name: 'foo',
+        type: 'string'
+      }]
+    },
+    echoArgsHandler
+  )
   t.deepEqual(response.args, { foo: 'bar' })
 })
 
 test('runs with string option with default', async t => {
   t.plan(1)
-  const runCli = await createCli({
-    options: [{
-      name: 'foo',
-      type: 'string',
-      default: 'buff'
-    }]
-  }, echoArgsHandler)
-  const { response } =
-    await invoke(runCli, 'node example-app')
+  const { response } = await testCli(
+   'node example-app',
+    {
+      options: [{
+        name: 'foo',
+        type: 'string',
+        default: 'buff'
+      }]
+    },
+    echoArgsHandler
+  )
   t.deepEqual(response.args, { foo: 'buff' })
 })
 
 test('runs with boolean option', async t => {
   t.plan(1)
-  const runCli = await createCli({
-    options: [{
-      name: 'foo',
-      type: 'boolean'
-    }]
-  }, echoArgsHandler)
-  const { response } =
-    await invoke(runCli, 'node example-app --foo')
+  const { response } = await testCli(
+    'node example-app --foo',
+    {
+      options: [{
+        name: 'foo',
+        type: 'boolean'
+      }]
+    },
+    echoArgsHandler
+  )
   t.deepEqual(response.args, { foo: true })
 })
 
 test('runs with omitted boolean option', async t => {
   t.plan(1)
-  const runCli = await createCli({
-    options: [{
-      name: 'foo',
-      type: 'boolean'
-    }]
-  }, echoArgsHandler)
-  const { response } =
-    await invoke(runCli, 'node example-app')
+  const { response } = await testCli(
+    'node example-app',
+    {
+      options: [{
+        name: 'foo',
+        type: 'boolean'
+      }]
+    },
+    echoArgsHandler
+  )
   t.deepEqual(response.args, { foo: false })
 })
 
 test('runs with omitted boolean option with default', async t => {
   t.plan(1)
-  const runCli = await createCli({
-    options: [{
-      name: 'foo',
-      type: 'boolean',
-      default: true
-    }]
-  }, echoArgsHandler)
-  const { response } =
-    await invoke(runCli, 'node example-app')
+  const { response } = await testCli(
+    'node example-app',
+    {
+      options: [{
+        name: 'foo',
+        type: 'boolean',
+        default: true
+      }]
+    },
+    echoArgsHandler
+  )
   t.deepEqual(response.args, { foo: true })
 })
 
 test('runs with negative boolean option', async t => {
   t.plan(1)
-  const runCli = await createCli({
-    options: [{
-      name: 'foo',
-      type: 'boolean'
-    }]
-  }, echoArgsHandler)
-  const { response } =
-    await invoke(runCli, 'node example-app --no-foo')
+  const { response } = await testCli(
+    'node example-app --no-foo',
+    {
+      options: [{
+        name: 'foo',
+        type: 'boolean'
+      }]
+    },
+    echoArgsHandler
+  )
   t.deepEqual(response.args, { foo: false })
 })
 
 test('shows help on error', async t => {
   t.plan(2)
-  const runCli = await createCli({
-    groups: [{
-      name: 'users',
-      label: 'Users',
-      commands: [
-        { name: 'show', description: 'Show user' },
-        {
-          name: 'list',
-          description: 'List users',
-          options: [{
-            name: 'foo',
-            type: 'string'
-          }]
-        }
-      ]
+  const { exitCode, output } = await testCli(
+    'node example-app',
+    {
+      groups: [{
+        name: 'users',
+        label: 'Users',
+        commands: [
+          { name: 'show', description: 'Show user' },
+          {
+            name: 'list',
+            description: 'List users',
+            options: [{
+              name: 'foo',
+              type: 'string'
+            }]
+          }
+        ]
+      }, {
+        name: 'util',
+        label: 'Utilities',
+        commands: [
+          { name: 'fix', description: 'Fix things' },
+          { name: 'break', description: 'Break things' }
+        ]
+      }]
     }, {
-      name: 'util',
-      label: 'Utilities',
-      commands: [
-        { name: 'fix', description: 'Fix things' },
-        { name: 'break', description: 'Break things' }
-      ]
-    }]
-  }, {
-    users: {
-      show: echoArgsHandler,
-      list: echoArgsHandler
-    },
-    util: {
-      fix: echoArgsHandler,
-      break: echoArgsHandler
+      users: {
+        show: echoArgsHandler,
+        list: echoArgsHandler
+      },
+      util: {
+        fix: echoArgsHandler,
+        break: echoArgsHandler
+      }
     }
-  })
-  const { exitCode, output } =
-    await invoke(runCli, 'node example-app')
+  )
   const expected = dedent`
   Usage: example-app <group> <command> [options]
 
@@ -318,9 +359,11 @@ test('shows help on error', async t => {
 
 test('shows help', async t => {
   t.plan(2)
-  const runCli = await createCli({}, echoArgsHandler)
-  const { output, exitCode } =
-    await invoke(runCli, 'node example-app --help')
+  const { output, exitCode } = await testCli(
+    'node example-app --help',
+    {},
+    echoArgsHandler
+  )
   const expected = dedent`
   Usage: example-app [options]
 
@@ -333,18 +376,19 @@ test('shows help', async t => {
 
 test('shows help with commands', async t => {
   t.plan(2)
-  const runCli = await createCli({
-    defaultCommand: 'show',
-    commands: [
-      { name: 'show', description: 'Show things' },
-      { name: 'list', description: 'List things' }
-    ]
-  }, {
-    show: echoArgsHandler,
-    list: echoArgsHandler
-  })
-  const { output, exitCode } =
-    await invoke(runCli, 'node example-app --help')
+  const { output, exitCode } = await testCli(
+    'node example-app --help',
+    {
+      defaultCommand: 'show',
+      commands: [
+        { name: 'show', description: 'Show things' },
+        { name: 'list', description: 'List things' }
+      ]
+    }, {
+      show: echoArgsHandler,
+      list: echoArgsHandler
+    }
+  )
   const expected = dedent`
   Usage: example-app <command> [options]
 
@@ -361,41 +405,42 @@ test('shows help with commands', async t => {
 
 test('shows help with command groups', async t => {
   t.plan(2)
-  const runCli = await createCli({
-    groups: [{
-      name: 'users',
-      label: 'Users',
-      commands: [
-        { name: 'show', description: 'Show user' },
-        {
-          name: 'list',
-          description: 'List users',
-          options: [{
-            name: 'foo',
-            type: 'string'
-          }]
-        }
-      ]
+  const { output, exitCode } = await testCli(
+    'node example-app --help',
+    {
+      groups: [{
+        name: 'users',
+        label: 'Users',
+        commands: [
+          { name: 'show', description: 'Show user' },
+          {
+            name: 'list',
+            description: 'List users',
+            options: [{
+              name: 'foo',
+              type: 'string'
+            }]
+          }
+        ]
+      }, {
+        name: 'util',
+        label: 'Utilities',
+        commands: [
+          { name: 'fix', description: 'Fix things' },
+          { name: 'break', description: 'Break things' }
+        ]
+      }]
     }, {
-      name: 'util',
-      label: 'Utilities',
-      commands: [
-        { name: 'fix', description: 'Fix things' },
-        { name: 'break', description: 'Break things' }
-      ]
-    }]
-  }, {
-    users: {
-      show: echoArgsHandler,
-      list: echoArgsHandler
-    },
-    util: {
-      fix: echoArgsHandler,
-      break: echoArgsHandler
+      users: {
+        show: echoArgsHandler,
+        list: echoArgsHandler
+      },
+      util: {
+        fix: echoArgsHandler,
+        break: echoArgsHandler
+      }
     }
-  })
-  const { output, exitCode } =
-    await invoke(runCli, 'node example-app --help')
+  )
   const expected = dedent`
   Usage: example-app <group> <command> [options]
 
@@ -416,41 +461,42 @@ test('shows help with command groups', async t => {
 
 test('shows help for specific command group', async t => {
   t.plan(2)
-  const runCli = await createCli({
-    groups: [{
-      name: 'users',
-      label: 'Users',
-      commands: [
-        { name: 'show', description: 'Show user' },
-        {
-          name: 'list',
-          description: 'List users',
-          options: [{
-            name: 'foo',
-            type: 'string'
-          }]
-        }
-      ]
+  const { output, exitCode } = await testCli(
+    'node example-app users --help',
+    {
+      groups: [{
+        name: 'users',
+        label: 'Users',
+        commands: [
+          { name: 'show', description: 'Show user' },
+          {
+            name: 'list',
+            description: 'List users',
+            options: [{
+              name: 'foo',
+              type: 'string'
+            }]
+          }
+        ]
+      }, {
+        name: 'util',
+        label: 'Utilities',
+        commands: [
+          { name: 'fix', description: 'Fix things' },
+          { name: 'break', description: 'Break things' }
+        ]
+      }]
     }, {
-      name: 'util',
-      label: 'Utilities',
-      commands: [
-        { name: 'fix', description: 'Fix things' },
-        { name: 'break', description: 'Break things' }
-      ]
-    }]
-  }, {
-    users: {
-      show: echoArgsHandler,
-      list: echoArgsHandler
-    },
-    util: {
-      fix: echoArgsHandler,
-      break: echoArgsHandler
+      users: {
+        show: echoArgsHandler,
+        list: echoArgsHandler
+      },
+      util: {
+        fix: echoArgsHandler,
+        break: echoArgsHandler
+      }
     }
-  })
-  const { output, exitCode } =
-    await invoke(runCli, 'node example-app users --help')
+  )
   const expected = dedent`
   Usage: example-app users <command> [options]
 
@@ -468,42 +514,41 @@ test('shows help for specific command group', async t => {
 
 test('shows help for specific command in command group', async t => {
   t.plan(2)
-  const runCli = await createCli({
-    groups: [{
-      name: 'users',
-      label: 'Users',
-      commands: [
-        { name: 'show', description: 'Show user' },
-        {
-          name: 'list',
-          description: 'List users',
-          options: [{
-            name: 'foo',
-            type: 'string'
-          }]
-        }
-      ]
+  const { output, exitCode } = await testCli(
+    'node example-app users show --help',
+    {
+      groups: [{
+        name: 'users',
+        label: 'Users',
+        commands: [
+          { name: 'show', description: 'Show user' },
+          {
+            name: 'list',
+            description: 'List users',
+            options: [{
+              name: 'foo',
+              type: 'string'
+            }]
+          }
+        ]
+      }, {
+        name: 'util',
+        label: 'Utilities',
+        commands: [
+          { name: 'fix', description: 'Fix things' },
+          { name: 'break', description: 'Break things' }
+        ]
+      }]
     }, {
-      name: 'util',
-      label: 'Utilities',
-      commands: [
-        { name: 'fix', description: 'Fix things' },
-        { name: 'break', description: 'Break things' }
-      ]
-    }]
-  }, {
-    users: {
-      show: echoArgsHandler,
-      list: echoArgsHandler
-    },
-    util: {
-      fix: echoArgsHandler,
-      break: echoArgsHandler
+      users: {
+        show: echoArgsHandler,
+        list: echoArgsHandler
+      },
+      util: {
+        fix: echoArgsHandler,
+        break: echoArgsHandler
+      }
     }
-  })
-  const { output, exitCode } = await invoke(
-    runCli,
-    'node example-app users show --help'
   )
   const expected = dedent`
   Usage: example-app users show [options]
@@ -522,135 +567,140 @@ test('shows help for specific command in command group', async t => {
 
 test('runs default command', async t => {
   t.plan(2)
-  const runCli = await createCli({
-    defaultCommand: 'show',
-    commands: [
-      { name: 'show' },
-      { name: 'list' }
-    ]
-  }, {
-    show: echoArgsHandler,
-    list: echoArgsHandler
-  })
-  const { response } = await invoke(runCli, 'node example-app')
+  const { response } = await testCli(
+    'node example-app',
+    {
+      defaultCommand: 'show',
+      commands: [
+        { name: 'show' },
+        { name: 'list' }
+      ]
+    }, {
+      show: echoArgsHandler,
+      list: echoArgsHandler
+    }
+  )
   t.deepEqual(response.args, {})
   t.deepEqual(response.positional, { commands: ['show'] })
 })
 
 test('runs default command in group', async t => {
   t.plan(2)
-  const runCli = await createCli({
-    groups: [{
-      name: 'users',
-      label: 'Users',
-      commands: [
-        { name: 'show', description: 'Show user' },
-        { name: 'list', description: 'List users' }
-      ]
+  const { response } = await testCli(
+    'node example-app util',
+    {
+      groups: [{
+        name: 'users',
+        label: 'Users',
+        commands: [
+          { name: 'show', description: 'Show user' },
+          { name: 'list', description: 'List users' }
+        ]
+      }, {
+        name: 'util',
+        label: 'Utilities',
+        defaultCommand: 'break',
+        commands: [
+          { name: 'fix', description: 'Fix things' },
+          { name: 'break', description: 'Break things' }
+        ]
+      }]
     }, {
-      name: 'util',
-      label: 'Utilities',
-      defaultCommand: 'break',
-      commands: [
-        { name: 'fix', description: 'Fix things' },
-        { name: 'break', description: 'Break things' }
-      ]
-    }]
-  }, {
-    users: {
-      show: echoArgsHandler,
-      list: echoArgsHandler
-    },
-    util: {
-      fix: echoArgsHandler,
-      break: echoArgsHandler
+      users: {
+        show: echoArgsHandler,
+        list: echoArgsHandler
+      },
+      util: {
+        fix: echoArgsHandler,
+        break: echoArgsHandler
+      }
     }
-  })
-  const { response } =
-    await invoke(runCli, 'node example-app util')
+  )
   t.deepEqual(response.args, {})
   t.deepEqual(response.positional, { commands: ['util', 'break'] })
 })
 
 test('runs command in default group', async t => {
   t.plan(2)
-  const runCli = await createCli({
-    defaultGroup: 'util',
-    groups: [{
-      name: 'users',
-      label: 'Users',
-      commands: [
-        { name: 'show', description: 'Show user' },
-        { name: 'list', description: 'List users' }
-      ]
+  const { response } = await testCli(
+    'node example-app break',
+    {
+      defaultGroup: 'util',
+      groups: [{
+        name: 'users',
+        label: 'Users',
+        commands: [
+          { name: 'show', description: 'Show user' },
+          { name: 'list', description: 'List users' }
+        ]
+      }, {
+        name: 'util',
+        label: 'Utilities',
+        defaultCommand: 'break',
+        commands: [
+          { name: 'fix', description: 'Fix things' },
+          { name: 'break', description: 'Break things' }
+        ]
+      }]
     }, {
-      name: 'util',
-      label: 'Utilities',
-      defaultCommand: 'break',
-      commands: [
-        { name: 'fix', description: 'Fix things' },
-        { name: 'break', description: 'Break things' }
-      ]
-    }]
-  }, {
-    users: {
-      show: echoArgsHandler,
-      list: echoArgsHandler
-    },
-    util: {
-      fix: echoArgsHandler,
-      break: echoArgsHandler
+      users: {
+        show: echoArgsHandler,
+        list: echoArgsHandler
+      },
+      util: {
+        fix: echoArgsHandler,
+        break: echoArgsHandler
+      }
     }
-  })
-  const { response } =
-    await invoke(runCli, 'node example-app break')
+  )
   t.deepEqual(response.args, {})
   t.deepEqual(response.positional, { commands: ['util', 'break'] })
 })
 
 test('runs default command in default group', async t => {
   t.plan(2)
-  const runCli = await createCli({
-    defaultGroup: 'users',
-    groups: [{
-      name: 'users',
-      label: 'Users',
-      defaultCommand: 'list',
-      commands: [
-        { name: 'show', description: 'Show user' },
-        { name: 'list', description: 'List users' }
-      ]
+  const { response } = await testCli(
+   'node example-app',
+    {
+      defaultGroup: 'users',
+      groups: [{
+        name: 'users',
+        label: 'Users',
+        defaultCommand: 'list',
+        commands: [
+          { name: 'show', description: 'Show user' },
+          { name: 'list', description: 'List users' }
+        ]
+      }, {
+        name: 'util',
+        label: 'Utilities',
+        commands: [
+          { name: 'fix', description: 'Fix things' },
+          { name: 'break', description: 'Break things' }
+        ]
+      }]
     }, {
-      name: 'util',
-      label: 'Utilities',
-      commands: [
-        { name: 'fix', description: 'Fix things' },
-        { name: 'break', description: 'Break things' }
-      ]
-    }]
-  }, {
-    users: {
-      show: echoArgsHandler,
-      list: echoArgsHandler
-    },
-    util: {
-      fix: echoArgsHandler,
-      break: echoArgsHandler
+      users: {
+        show: echoArgsHandler,
+        list: echoArgsHandler
+      },
+      util: {
+        fix: echoArgsHandler,
+        break: echoArgsHandler
+      }
     }
-  })
-  const { response } =
-    await invoke(runCli, 'node example-app')
+  )
   t.deepEqual(response.args, {})
   t.deepEqual(response.positional, { commands: ['users', 'list'] })
 })
 
 test('errors when handler throws error', async t => {
   t.plan(2)
-  const runCli = await createCli({}, () => {
-    throw new Error('Everything is ruined!')
-  })
-  const { output, exitCode } =
-    await invoke(runCli, 'node example-app foo')
+  const { output, exitCode } = await testCli(
+    'node example-app foo',
+    {},
+    () => { throw new Error('Everything is ruined!') }
+  )
   const expected = dedent`
   Usage: example-app [options]
 
@@ -666,17 +716,18 @@ test('errors when handler throws error', async t => {
 
 test('errors given non-existent command', async t => {
   t.plan(2)
-  const runCli = await createCli({
-    commands: [
-      { name: 'show', description: 'Show things' },
-      { name: 'list', description: 'List things' }
-    ]
-  }, {
-    show: echoArgsHandler,
-    list: echoArgsHandler
-  })
-  const { output, exitCode } =
-    await invoke(runCli, 'node example-app foo')
+  const { output, exitCode } = await testCli(
+    'node example-app foo',
+    {
+      commands: [
+        { name: 'show', description: 'Show things' },
+        { name: 'list', description: 'List things' }
+      ]
+    }, {
+      show: echoArgsHandler,
+      list: echoArgsHandler
+    }
+  )
 
   const expected = dedent`
   Usage: example-app <command> [options]
@@ -696,35 +747,37 @@ test('errors given non-existent command', async t => {
 })
 
 test('errors given non-existent command in command group', async t => {
-  const runCli = await createCli({
-    groups: [{
-      name: 'users',
-      label: 'Users',
-      defaultCommand: 'list',
-      commands: [
-        { name: 'show', description: 'Show user' },
-        { name: 'list', description: 'List users' }
-      ]
+  const { output, exitCode } = await testCli(
+    'node example-app users foo',
+    {
+      groups: [{
+        name: 'users',
+        label: 'Users',
+        defaultCommand: 'list',
+        commands: [
+          { name: 'show', description: 'Show user' },
+          { name: 'list', description: 'List users' }
+        ]
+      }, {
+        name: 'util',
+        label: 'Utilities',
+        commands: [
+          { name: 'fix', description: 'Fix things' },
+          { name: 'break', description: 'Break things' }
+        ]
+      }]
     }, {
-      name: 'util',
-      label: 'Utilities',
-      commands: [
-        { name: 'fix', description: 'Fix things' },
-        { name: 'break', description: 'Break things' }
-      ]
-    }]
-  }, {
-    users: {
-      show: echoArgsHandler,
-      list: echoArgsHandler
-    },
-    util: {
-      fix: echoArgsHandler,
-      break: echoArgsHandler
+      users: {
+        show: echoArgsHandler,
+        list: echoArgsHandler
+      },
+      util: {
+        fix: echoArgsHandler,
+        break: echoArgsHandler
+      }
     }
-  })
-  const { output, exitCode } =
-    await invoke(runCli, 'node example-app users foo')
+  )
+
   const expected = dedent`
   Usage: example-app <group> <command> [options]
 
@@ -746,7 +799,7 @@ test('errors given non-existent command in command group', async t => {
 
 test('errors given non-existent group', async t => {
   t.plan(4)
-  const runCli = await createCli({
+  const config = {
     groups: [{
       name: 'users',
       label: 'Users',
@@ -763,7 +816,8 @@ test('errors given non-existent group', async t => {
         { name: 'break', description: 'Break things' }
       ]
     }]
-  }, {
+  }
+  const handlers = {
     users: {
       show: echoArgsHandler,
       list: echoArgsHandler
@@ -772,10 +826,13 @@ test('errors given non-existent group', async t => {
       fix: echoArgsHandler,
       break: echoArgsHandler
     }
-  })
+  }
 
-  const { output: output1, exitCode: exitCode1 } =
-    await invoke(runCli, 'node example-app fooz')
+  const { output: output1, exitCode: exitCode1 } = await testCli(
+    'node example-app fooz',
+    config,
+    handlers
+  )
 
   const expected1 = dedent`
   Usage: example-app <group> <command> [options]
@@ -798,8 +855,11 @@ test('errors given non-existent group', async t => {
   t.is(output1, expected1)
   t.is(exitCode1, 1)
 
-  const { output: output2, exitCode: exitCode2 } =
-    await invoke(runCli, 'node example-app fooz barz')
+  const { output: output2, exitCode: exitCode2 } = await testCli(
+    'node example-app fooz barz',
+    config,
+    handlers
+  )
 
   const expected2 = dedent`
   Usage: example-app <group> <command> [options]
@@ -825,17 +885,18 @@ test('errors given non-existent group', async t => {
 
 test('errors when command is missing', async t => {
   t.plan(2)
-  const runCli = await createCli({
-    commands: [
-      { name: 'show', description: 'Show things' },
-      { name: 'list', description: 'List things' }
-    ]
-  }, {
-    show: echoArgsHandler,
-    list: echoArgsHandler
-  })
-  const { output, exitCode } =
-    await invoke(runCli, 'node example-app')
+  const { output, exitCode } = await testCli(
+    'node example-app',
+    {
+      commands: [
+        { name: 'show', description: 'Show things' },
+        { name: 'list', description: 'List things' }
+      ]
+    }, {
+      show: echoArgsHandler,
+      list: echoArgsHandler
+    }
+  )
 
   const expected = dedent`
   Usage: example-app <command> [options]
@@ -856,35 +917,36 @@ test('errors when command is missing', async t => {
 
 test('errors when command group is missing', async t => {
   t.plan(2)
-  const runCli = await createCli({
-    groups: [{
-      name: 'users',
-      label: 'Users',
-      defaultCommand: 'list',
-      commands: [
-        { name: 'show', description: 'Show user' },
-        { name: 'list', description: 'List users' }
-      ]
+  const { output, exitCode } = await testCli(
+    'node example-app',
+    {
+      groups: [{
+        name: 'users',
+        label: 'Users',
+        defaultCommand: 'list',
+        commands: [
+          { name: 'show', description: 'Show user' },
+          { name: 'list', description: 'List users' }
+        ]
+      }, {
+        name: 'util',
+        label: 'Utilities',
+        commands: [
+          { name: 'fix', description: 'Fix things' },
+          { name: 'break', description: 'Break things' }
+        ]
+      }]
     }, {
-      name: 'util',
-      label: 'Utilities',
-      commands: [
-        { name: 'fix', description: 'Fix things' },
-        { name: 'break', description: 'Break things' }
-      ]
-    }]
-  }, {
-    users: {
-      show: echoArgsHandler,
-      list: echoArgsHandler
-    },
-    util: {
-      fix: echoArgsHandler,
-      break: echoArgsHandler
+      users: {
+        show: echoArgsHandler,
+        list: echoArgsHandler
+      },
+      util: {
+        fix: echoArgsHandler,
+        break: echoArgsHandler
+      }
     }
-  })
-  const { output, exitCode } =
-    await invoke(runCli, 'node example-app')
+  )
 
   const expected = dedent`
   Usage: example-app <group> <command> [options]
@@ -910,18 +972,19 @@ test('errors when command group is missing', async t => {
 
 test('shows help with default command', async t => {
   t.plan(2)
-  const runCli = await createCli({
-    defaultCommand: 'show',
-    commands: [
-      { name: 'show', description: 'Show thing' },
-      { name: 'list', description: 'List things' }
-    ]
-  }, {
-    show: echoArgsHandler,
-    list: echoArgsHandler
-  })
-  const { output, exitCode } =
-    await invoke(runCli, 'node example-app --help')
+  const { output, exitCode } = await testCli(
+    'node example-app --help',
+    {
+      defaultCommand: 'show',
+      commands: [
+        { name: 'show', description: 'Show thing' },
+        { name: 'list', description: 'List things' }
+      ]
+    }, {
+      show: echoArgsHandler,
+      list: echoArgsHandler
+    }
+  )
 
   const expected = dedent`
   Usage: example-app <command> [options]
@@ -939,35 +1002,36 @@ test('shows help with default command', async t => {
 
 test('shows help with default command group', async t => {
   t.plan(2)
-  const runCli = await createCli({
-    defaultGroup: 'util',
-    groups: [{
-      name: 'users',
-      label: 'Users',
-      commands: [
-        { name: 'show', description: 'Show user' },
-        { name: 'list', description: 'List users' }
-      ]
+  const { output, exitCode } = await testCli(
+    'node example-app --help',
+    {
+      defaultGroup: 'util',
+      groups: [{
+        name: 'users',
+        label: 'Users',
+        commands: [
+          { name: 'show', description: 'Show user' },
+          { name: 'list', description: 'List users' }
+        ]
+      }, {
+        name: 'util',
+        label: 'Utilities',
+        commands: [
+          { name: 'fix', description: 'Fix things' },
+          { name: 'break', description: 'Break things' }
+        ]
+      }]
     }, {
-      name: 'util',
-      label: 'Utilities',
-      commands: [
-        { name: 'fix', description: 'Fix things' },
-        { name: 'break', description: 'Break things' }
-      ]
-    }]
-  }, {
-    users: {
-      show: echoArgsHandler,
-      list: echoArgsHandler
-    },
-    util: {
-      fix: echoArgsHandler,
-      break: echoArgsHandler
+      users: {
+        show: echoArgsHandler,
+        list: echoArgsHandler
+      },
+      util: {
+        fix: echoArgsHandler,
+        break: echoArgsHandler
+      }
     }
-  })
-  const { output, exitCode } =
-    await invoke(runCli, 'node example-app --help')
+  )
 
   const expected = dedent`
   Usage: example-app <group> <command> [options]
@@ -989,11 +1053,11 @@ test('shows help with default command group', async t => {
 
 test('shows help with description', async t => {
   t.plan(2)
-  const runCli = await createCli({
-    description: 'An example app'
-  }, echoArgsHandler)
-  const { output, exitCode } =
-    await invoke(runCli, 'node example-app --help')
+  const { output, exitCode } = await testCli(
+    'node example-app --help',
+    { description: 'An example app' },
+    echoArgsHandler
+  )
   const expected = dedent`
   Usage: example-app [options]
 
@@ -1008,17 +1072,19 @@ test('shows help with description', async t => {
 
 test('errors when required option is missing', async t => {
   t.plan(2)
-  const runCli = await createCli({
-    description: 'An example app',
-    options: [{
-      name: 'foo',
-      type: 'string',
-      description: 'Name of foo',
-      required: true
-    }]
-  }, echoArgsHandler)
-  const { output, exitCode } =
-    await invoke(runCli, 'node example-app')
+  const { output, exitCode } = await testCli(
+    'node example-app',
+    {
+      description: 'An example app',
+      options: [{
+        name: 'foo',
+        type: 'string',
+        description: 'Name of foo',
+        required: true
+      }]
+    },
+    echoArgsHandler
+  )
   const expected = dedent`
   Usage: example-app [options]
 
@@ -1037,17 +1103,19 @@ test('errors when required option is missing', async t => {
 
 test('errors when option value is missing', async t => {
   t.plan(2)
-  const runCli = await createCli({
-    description: 'An example app',
-    options: [{
-      name: 'foo',
-      type: 'string',
-      description: 'Name of foo',
-      required: true
-    }]
-  }, echoArgsHandler)
-  const { output, exitCode } =
-    await invoke(runCli, 'node example-app --foo')
+  const { output, exitCode } = await testCli(
+    'node example-app --foo',
+    {
+      description: 'An example app',
+      options: [{
+        name: 'foo',
+        type: 'string',
+        description: 'Name of foo',
+        required: true
+      }]
+    },
+    echoArgsHandler
+  )
   const expected = dedent`
   Usage: example-app [options]
 
@@ -1066,25 +1134,27 @@ test('errors when option value is missing', async t => {
 
 test('errors when multiple option values are missing', async t => {
   t.plan(2)
-  const runCli = await createCli({
-    description: 'An example app',
-    options: [
-      {
-        name: 'foo',
-        type: 'string',
-        description: 'Name of foo',
-        required: true
-      },
-      {
-        name: 'bar',
-        type: 'string',
-        description: 'Name of bar',
-        required: true
-      }
-    ]
-  }, echoArgsHandler)
-  const { output, exitCode } =
-    await invoke(runCli, 'node example-app --foo --bar')
+  const { output, exitCode } = await testCli(
+    'node example-app --foo --bar',
+    {
+      description: 'An example app',
+      options: [
+        {
+          name: 'foo',
+          type: 'string',
+          description: 'Name of foo',
+          required: true
+        },
+        {
+          name: 'bar',
+          type: 'string',
+          description: 'Name of bar',
+          required: true
+        }
+      ]
+    },
+    echoArgsHandler
+  )
   const expected = dedent`
   Usage: example-app [options]
 
@@ -1105,25 +1175,27 @@ test('errors when multiple option values are missing', async t => {
 
 test('errors when multiple required options are missing', async t => {
   t.plan(2)
-  const runCli = await createCli({
-    description: 'An example app',
-    options: [
-      {
-        name: 'foo',
-        type: 'string',
-        description: 'Name of foo',
-        required: true
-      },
-      {
-        name: 'bar',
-        type: 'string',
-        description: 'Name of bar',
-        required: true
-      }
-    ]
-  }, echoArgsHandler)
-  const { output, exitCode } =
-    await invoke(runCli, 'node example-app')
+  const { output, exitCode } = await testCli(
+    'node example-app',
+    {
+      description: 'An example app',
+      options: [
+        {
+          name: 'foo',
+          type: 'string',
+          description: 'Name of foo',
+          required: true
+        },
+        {
+          name: 'bar',
+          type: 'string',
+          description: 'Name of bar',
+          required: true
+        }
+      ]
+    },
+    echoArgsHandler
+  )
   const expected = dedent`
   Usage: example-app [options]
 
@@ -1144,17 +1216,19 @@ test('errors when multiple required options are missing', async t => {
 
 test('errors given a non-existent option', async t => {
   t.plan(2)
-  const runCli = await createCli({
-    description: 'An example app',
-    options: [{
-      name: 'foo',
-      type: 'string',
-      description: 'Name of foo',
-      required: true
-    }]
-  }, echoArgsHandler)
-  const { output, exitCode } =
-    await invoke(runCli, 'node example-app --moof miff')
+  const { output, exitCode } = await testCli(
+    'node example-app --moof miff',
+    {
+      description: 'An example app',
+      options: [{
+        name: 'foo',
+        type: 'string',
+        description: 'Name of foo',
+        required: true
+      }]
+    },
+    echoArgsHandler
+  )
   const expected = dedent`
   Usage: example-app [options]
 
@@ -1173,17 +1247,19 @@ test('errors given a non-existent option', async t => {
 
 test('errors given multiple non-existent options', async t => {
   t.plan(2)
-  const runCli = await createCli({
-    description: 'An example app',
-    options: [{
-      name: 'foo',
-      type: 'string',
-      description: 'Name of foo',
-      required: true
-    }]
-  }, echoArgsHandler)
-  const { output, exitCode } =
-    await invoke(runCli, 'node example-app --moof miff --doof diff')
+  const { output, exitCode } = await testCli(
+    'node example-app --moof miff --doof diff',
+    {
+      description: 'An example app',
+      options: [{
+        name: 'foo',
+        type: 'string',
+        description: 'Name of foo',
+        required: true
+      }]
+    },
+    echoArgsHandler
+  )
   const expected = dedent`
   Usage: example-app [options]
 
@@ -1203,23 +1279,25 @@ test('errors given multiple non-existent options', async t => {
 
 test('errors when required option is missing for command', async t => {
   t.plan(2)
-  const runCli = await createCli({
-    description: 'An example app',
-    commands: [
-      {
-        name: 'show',
-        description: 'Show things',
-        options: [{
-          name: 'foo',
-          type: 'string',
-          description: 'Name of foo',
-          required: true
-        }]
-      }
-    ]
-  }, echoArgsHandler)
-  const { output, exitCode } =
-    await invoke(runCli, 'node example-app show')
+  const { output, exitCode } = await testCli(
+    'node example-app show',
+    {
+      description: 'An example app',
+      commands: [
+        {
+          name: 'show',
+          description: 'Show things',
+          options: [{
+            name: 'foo',
+            type: 'string',
+            description: 'Name of foo',
+            required: true
+          }]
+        }
+      ]
+    },
+    echoArgsHandler
+  )
   const expected = dedent`
   Usage: example-app show [options]
 
@@ -1241,22 +1319,24 @@ test('errors when required option is missing for command', async t => {
 
 test('errors when option value is missing for command', async t => {
   t.plan(2)
-  const runCli = await createCli({
-    description: 'An example app',
-    commands: [
-      {
-        name: 'show',
-        description: 'Show things',
-        options: [{
-          name: 'foo',
-          type: 'string',
-          description: 'Name of foo'
-        }]
-      }
-    ]
-  }, echoArgsHandler)
-  const { output, exitCode } =
-    await invoke(runCli, 'node example-app show --foo')
+  const { output, exitCode } = await testCli(
+    'node example-app show --foo',
+    {
+      description: 'An example app',
+      commands: [
+        {
+          name: 'show',
+          description: 'Show things',
+          options: [{
+            name: 'foo',
+            type: 'string',
+            description: 'Name of foo'
+          }]
+        }
+      ]
+    },
+    echoArgsHandler
+  )
   const expected = dedent`
   Usage: example-app show [options]
 
@@ -1278,29 +1358,31 @@ test('errors when option value is missing for command', async t => {
 
 test('errors when multiple option values are missing for command', async t => {
   t.plan(2)
-  const runCli = await createCli({
-    description: 'An example app',
-    commands: [
-      {
-        name: 'show',
-        description: 'Show things',
-        options: [
-          {
-            name: 'foo',
-            type: 'string',
-            description: 'Name of foo'
-          },
-          {
-            name: 'bar',
-            type: 'string',
-            description: 'Name of bar'
-          }
-        ]
-      }
-    ]
-  }, echoArgsHandler)
-  const { output, exitCode } =
-    await invoke(runCli, 'node example-app show --foo --bar')
+  const { output, exitCode } = await testCli(
+    'node example-app show --foo --bar',
+    {
+      description: 'An example app',
+      commands: [
+        {
+          name: 'show',
+          description: 'Show things',
+          options: [
+            {
+              name: 'foo',
+              type: 'string',
+              description: 'Name of foo'
+            },
+            {
+              name: 'bar',
+              type: 'string',
+              description: 'Name of bar'
+            }
+          ]
+        }
+      ]
+    },
+    echoArgsHandler
+  )
   const expected = dedent`
   Usage: example-app show [options]
 
@@ -1324,22 +1406,24 @@ test('errors when multiple option values are missing for command', async t => {
 
 test('errors given a non-existent option for command', async t => {
   t.plan(2)
-  const runCli = await createCli({
-    description: 'An example app',
-    commands: [
-      {
-        name: 'show',
-        description: 'Show things',
-        options: [{
-          name: 'foo',
-          type: 'string',
-          description: 'Name of foo'
-        }]
-      }
-    ]
-  }, echoArgsHandler)
-  const { output, exitCode } =
-    await invoke(runCli, 'node example-app show --zoo')
+  const { output, exitCode } = await testCli(
+    'node example-app show --zoo',
+    {
+      description: 'An example app',
+      commands: [
+        {
+          name: 'show',
+          description: 'Show things',
+          options: [{
+            name: 'foo',
+            type: 'string',
+            description: 'Name of foo'
+          }]
+        }
+      ]
+    },
+    echoArgsHandler
+  )
   const expected = dedent`
   Usage: example-app show [options]
 
@@ -1361,31 +1445,33 @@ test('errors given a non-existent option for command', async t => {
 
 test('errors when multiple required options are missing for command', async t => {
   t.plan(2)
-  const runCli = await createCli({
-    description: 'An example app',
-    commands: [
-      {
-        name: 'show',
-        description: 'Show things',
-        options: [
-          {
-            name: 'foo',
-            type: 'string',
-            description: 'Name of foo',
-            required: true
-          },
-          {
-            name: 'bar',
-            type: 'string',
-            description: 'Name of bar',
-            required: true
-          }
-        ]
-      }
-    ]
-  }, echoArgsHandler)
-  const { output, exitCode } =
-    await invoke(runCli, 'node example-app show')
+  const { output, exitCode } = await testCli(
+    'node example-app show',
+    {
+      description: 'An example app',
+      commands: [
+        {
+          name: 'show',
+          description: 'Show things',
+          options: [
+            {
+              name: 'foo',
+              type: 'string',
+              description: 'Name of foo',
+              required: true
+            },
+            {
+              name: 'bar',
+              type: 'string',
+              description: 'Name of bar',
+              required: true
+            }
+          ]
+        }
+      ]
+    },
+    echoArgsHandler
+  )
   const expected = dedent`
   Usage: example-app show [options]
 
@@ -1409,37 +1495,39 @@ test('errors when multiple required options are missing for command', async t =>
 
 test('errors when required option is missing for command in command group', async t => {
   t.plan(2)
-  const runCli = await createCli({
-    description: 'An example app',
-    groups: [{
-      name: 'users',
-      label: 'Users',
-      commands: [
-        {
-          name: 'show',
-          description: 'Show user',
-          options: [
-            {
-              name: 'foo',
-              type: 'string',
-              description: 'Name of foo',
-              required: true
-            }
-          ]
-        },
-        { name: 'list', description: 'List users' }
-      ]
-    }, {
-      name: 'util',
-      label: 'Utilities',
-      commands: [
-        { name: 'fix', description: 'Fix things' },
-        { name: 'break', description: 'Break things' }
-      ]
-    }]
-  }, echoArgsHandler)
-  const { output, exitCode } =
-    await invoke(runCli, 'node example-app users show')
+  const { output, exitCode } = await testCli(
+    'node example-app users show',
+    {
+      description: 'An example app',
+      groups: [{
+        name: 'users',
+        label: 'Users',
+        commands: [
+          {
+            name: 'show',
+            description: 'Show user',
+            options: [
+              {
+                name: 'foo',
+                type: 'string',
+                description: 'Name of foo',
+                required: true
+              }
+            ]
+          },
+          { name: 'list', description: 'List users' }
+        ]
+      }, {
+        name: 'util',
+        label: 'Utilities',
+        commands: [
+          { name: 'fix', description: 'Fix things' },
+          { name: 'break', description: 'Break things' }
+        ]
+      }]
+    },
+    echoArgsHandler
+  )
   const expected = dedent`
   Usage: example-app users show [options]
 
@@ -1463,37 +1551,39 @@ test('errors when required option is missing for command in command group', asyn
 
 test('errors when option value is missing for command in command group', async t => {
   t.plan(2)
-  const runCli = await createCli({
-    description: 'An example app',
-    groups: [{
-      name: 'users',
-      label: 'Users',
-      commands: [
-        {
-          name: 'show',
-          description: 'Show user',
-          options: [
-            {
-              name: 'foo',
-              type: 'string',
-              description: 'Name of foo',
-              required: true
-            }
-          ]
-        },
-        { name: 'list', description: 'List users' }
-      ]
-    }, {
-      name: 'util',
-      label: 'Utilities',
-      commands: [
-        { name: 'fix', description: 'Fix things' },
-        { name: 'break', description: 'Break things' }
-      ]
-    }]
-  }, echoArgsHandler)
-  const { output, exitCode } =
-    await invoke(runCli, 'node example-app users show --foo')
+  const { output, exitCode } = await testCli(
+    'node example-app users show --foo',
+    {
+      description: 'An example app',
+      groups: [{
+        name: 'users',
+        label: 'Users',
+        commands: [
+          {
+            name: 'show',
+            description: 'Show user',
+            options: [
+              {
+                name: 'foo',
+                type: 'string',
+                description: 'Name of foo',
+                required: true
+              }
+            ]
+          },
+          { name: 'list', description: 'List users' }
+        ]
+      }, {
+        name: 'util',
+        label: 'Utilities',
+        commands: [
+          { name: 'fix', description: 'Fix things' },
+          { name: 'break', description: 'Break things' }
+        ]
+      }]
+    },
+    echoArgsHandler
+  )
   const expected = dedent`
   Usage: example-app users show [options]
 
@@ -1517,43 +1607,45 @@ test('errors when option value is missing for command in command group', async t
 
 test('errors when multiple option values are missing for command in command group', async t => {
   t.plan(2)
-  const runCli = await createCli({
-    description: 'An example app',
-    groups: [{
-      name: 'users',
-      label: 'Users',
-      commands: [
-        {
-          name: 'show',
-          description: 'Show user',
-          options: [
-            {
-              name: 'foo',
-              type: 'string',
-              description: 'Name of foo',
-              required: true
-            },
-            {
-              name: 'bar',
-              type: 'string',
-              description: 'Name of bar',
-              required: true
-            }
-          ]
-        },
-        { name: 'list', description: 'List users' }
-      ]
-    }, {
-      name: 'util',
-      label: 'Utilities',
-      commands: [
-        { name: 'fix', description: 'Fix things' },
-        { name: 'break', description: 'Break things' }
-      ]
-    }]
-  }, echoArgsHandler)
-  const { output, exitCode } =
-    await invoke(runCli, 'node example-app users show --foo --bar')
+  const { output, exitCode } = await testCli(
+    'node example-app users show --foo --bar',
+    {
+      description: 'An example app',
+      groups: [{
+        name: 'users',
+        label: 'Users',
+        commands: [
+          {
+            name: 'show',
+            description: 'Show user',
+            options: [
+              {
+                name: 'foo',
+                type: 'string',
+                description: 'Name of foo',
+                required: true
+              },
+              {
+                name: 'bar',
+                type: 'string',
+                description: 'Name of bar',
+                required: true
+              }
+            ]
+          },
+          { name: 'list', description: 'List users' }
+        ]
+      }, {
+        name: 'util',
+        label: 'Utilities',
+        commands: [
+          { name: 'fix', description: 'Fix things' },
+          { name: 'break', description: 'Break things' }
+        ]
+      }]
+    },
+    echoArgsHandler
+  )
   const expected = dedent`
   Usage: example-app users show [options]
 
@@ -1579,37 +1671,39 @@ test('errors when multiple option values are missing for command in command grou
 
 test('errors given a non-existent option for command in command group', async t => {
   t.plan(2)
-  const runCli = await createCli({
-    description: 'An example app',
-    groups: [{
-      name: 'users',
-      label: 'Users',
-      commands: [
-        {
-          name: 'show',
-          description: 'Show user',
-          options: [
-            {
-              name: 'foo',
-              type: 'string',
-              description: 'Name of foo',
-              required: true
-            }
-          ]
-        },
-        { name: 'list', description: 'List users' }
-      ]
-    }, {
-      name: 'util',
-      label: 'Utilities',
-      commands: [
-        { name: 'fix', description: 'Fix things' },
-        { name: 'break', description: 'Break things' }
-      ]
-    }]
-  }, echoArgsHandler)
-  const { output, exitCode } =
-    await invoke(runCli, 'node example-app users show --zoo')
+  const { output, exitCode } = await testCli(
+    'node example-app users show --zoo',
+    {
+      description: 'An example app',
+      groups: [{
+        name: 'users',
+        label: 'Users',
+        commands: [
+          {
+            name: 'show',
+            description: 'Show user',
+            options: [
+              {
+                name: 'foo',
+                type: 'string',
+                description: 'Name of foo',
+                required: true
+              }
+            ]
+          },
+          { name: 'list', description: 'List users' }
+        ]
+      }, {
+        name: 'util',
+        label: 'Utilities',
+        commands: [
+          { name: 'fix', description: 'Fix things' },
+          { name: 'break', description: 'Break things' }
+        ]
+      }]
+    },
+    echoArgsHandler
+  )
   const expected = dedent`
   Usage: example-app users show [options]
 
@@ -1633,44 +1727,46 @@ test('errors given a non-existent option for command in command group', async t 
 
 test('errors when multiple required options are missing for command in command group', async t => {
   t.plan(2)
-  const runCli = await createCli({
-    description: 'An example app',
-    groups: [{
-      name: 'users',
-      label: 'Users',
-      commands: [
-        {
-          name: 'show',
-          description: 'Show user',
-          options: [
-            {
-              name: 'foo',
-              type: 'string',
-              description: 'Name of foo',
-              required: true
-            },
-            {
-              name: 'bar',
-              type: 'string',
-              description: 'Name of bar',
-              required: true
-            }
-          ]
-        },
-        { name: 'list', description: 'List users' }
-      ]
-    }, {
-      name: 'util',
-      label: 'Utilities',
-      commands: [
-        { name: 'fix', description: 'Fix things' },
-        { name: 'break', description: 'Break things' }
-      ]
-    }]
-  }, echoArgsHandler)
+  const { output, exitCode } = await testCli(
+    'node example-app users show',
+    {
+      description: 'An example app',
+      groups: [{
+        name: 'users',
+        label: 'Users',
+        commands: [
+          {
+            name: 'show',
+            description: 'Show user',
+            options: [
+              {
+                name: 'foo',
+                type: 'string',
+                description: 'Name of foo',
+                required: true
+              },
+              {
+                name: 'bar',
+                type: 'string',
+                description: 'Name of bar',
+                required: true
+              }
+            ]
+          },
+          { name: 'list', description: 'List users' }
+        ]
+      }, {
+        name: 'util',
+        label: 'Utilities',
+        commands: [
+          { name: 'fix', description: 'Fix things' },
+          { name: 'break', description: 'Break things' }
+        ]
+      }]
+    },
+    echoArgsHandler
+  )
 
-  const { output, exitCode } =
-    await invoke(runCli, 'node example-app users show')
   const expected = dedent`
   Usage: example-app users show [options]
 
