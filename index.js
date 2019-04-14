@@ -116,7 +116,7 @@ const coerceBooleanValue = (args, option) => {
 const coerceStringValue = (args, option) =>
   args.options[option.name] || option.default
 
-const findApplicableOptions = (config, args) => {
+const reduceOptions = (config, args) => {
   const options = []
   if (config.options) {
     for (const option of config.options) {
@@ -216,10 +216,10 @@ const resolveInputs = (config, args) => {
 }
 
 const preValidationValidation = (config, args) => {
-  const actualOptionNames = Object.keys(args.options)
-  const expectedOptionsNames = config.options.map(o => o.name)
-  const extraneousKeys = difference(actualOptionNames, expectedOptionsNames)
-  return extraneousKeys
+  const inputOptionNames = Object.keys(args.options)
+  const optionNames = config.options.map(o => o.name)
+  const extraOptions = difference(inputOptionNames, optionNames)
+  return extraOptions
     .map(option => new Error(`\`${option}\` option does not exist`))
 }
 
@@ -234,7 +234,7 @@ const helpOption = {
 const prepareConfig = (config, args) => {
   // Build up a list of possible options and include common items such
   // as `--help` and `--version`
-  const appOptions = findApplicableOptions(config, args)
+  const appOptions = reduceOptions(config, args)
   const options = [ ...appOptions, helpOption ]
 
   // Build a list of expected positional items.
@@ -259,7 +259,7 @@ module.exports = async (
 
   // The "show usage" function returns different output at differnet
   // stages. This initial helper displays data from the raw args and config.
-  const showPreValidationUsage = createShowUsage(
+  const showPreResolveUsage = createShowUsage(
     args,
     appConfig,
     appProcess,
@@ -269,7 +269,7 @@ module.exports = async (
   // Make an inital pass at validation
   const preValidationErrors = preValidationValidation(appConfig, args)
   if (preValidationErrors.length) {
-    return showPreValidationUsage(preValidationErrors)
+    return showPreResolveUsage(preValidationErrors)
   }
 
   // Make changes to args and config prior to invoking command
@@ -280,7 +280,7 @@ module.exports = async (
 
   // Show help and exit upon request
   if (resolvedArgs.options.help) {
-    return showPreValidationUsage()
+    return showPreResolveUsage()
   }
 
   // Create an update helper for showing usuage with resolved args/config
