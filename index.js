@@ -158,15 +158,26 @@ const findApplicableOptions = (config, args) => {
   return options
 }
 
-const coerceArgs = (config, args) => {
-  const normalized = {}
+const resolveHandler = (args, handlers) => {
+  if (isFunction(handlers)) return handlers
+
+  let handler = handlers
+  for (const command of args.commands) {
+    handler = handler[camelCase(command)]
+  }
+
+  return handler
+}
+
+const resolveInputs = (config, args) => {
+  const coercedOptions = {}
   if (config.options) {
     for (const option of config.options) {
       if (option.type === 'boolean') {
-        normalized[option.name] = coerceBooleanValue(args, option)
+        coercedOptions[option.name] = coerceBooleanValue(args, option)
       } else if (option.type === 'string') {
         if (!has(args.options, option.name) && !option.default) continue
-        normalized[option.name] = coerceStringValue(args, option)
+        coercedOptions[option.name] = coerceStringValue(args, option)
       }
     }
   }
@@ -176,10 +187,10 @@ const coerceArgs = (config, args) => {
       if (!command.options || command.name !== commandName) continue
       for (const option of command.options) {
         if (option.type === 'boolean') {
-          normalized[option.name] = coerceBooleanValue(args, option)
+          coercedOptions[option.name] = coerceBooleanValue(args, option)
         } else if (option.type === 'string') {
           if (!has(args.options, option.name)) continue
-          normalized[option.name] = coerceStringValue(args, option)
+          coercedOptions[option.name] = coerceStringValue(args, option)
         }
       }
     }
@@ -193,30 +204,16 @@ const coerceArgs = (config, args) => {
         if (!command.options || command.name !== commandName) continue
         for (const option of command.options) {
           if (option.type === 'boolean') {
-            normalized[option.name] = coerceBooleanValue(args, option)
+            coercedOptions[option.name] = coerceBooleanValue(args, option)
           } else if (option.type === 'string') {
             if (!has(args.options, option.name)) continue
-            normalized[option.name] = coerceStringValue(args, option)
+            coercedOptions[option.name] = coerceStringValue(args, option)
           }
         }
       }
     }
   }
-  return { ...args, options: normalized }
-}
 
-const resolveHandler = (args, handlers) => {
-  if (isFunction(handlers)) return handlers
-
-  let handler = handlers
-  for (const command of args.commands) {
-    handler = handler[camelCase(command)]
-  }
-
-  return handler
-}
-
-const resolveInputs = (config, args) => {
   if (config.defaultCommand) {
     config.commands = config.commands
       .map(command => ({
@@ -250,13 +247,19 @@ const resolveInputs = (config, args) => {
         commands.push(group.defaultCommand)
       }
     }
-    return { config, args: { ...args, commands } }
+    return {
+      config,
+      args: { ...args, commands, options: coercedOptions }
+    }
   }
 
-  return { args, config }
+  return {
+    config,
+    args: { ...args, options: coercedOptions }
+  }
 }
 
-const preCoercionValidation = (config, args) => {
+const preValidationValidation = (config, args) => {
   const actualOptionNames = Object.keys(args.options)
   const expectedOptionsNames = config.options.map(o => o.name)
   const extraneousKeys = difference(actualOptionNames, expectedOptionsNames)
@@ -307,19 +310,16 @@ module.exports = async (
   )
 
   // Make an inital pass at validation
-  const preCoercionErrors = preCoercionValidation(appConfig, args)
-  if (preCoercionErrors.length) {
-    return showPreValidationUsage(preCoercionErrors)
+  const preValidationErrors = preValidationValidation(appConfig, args)
+  if (preValidationErrors.length) {
+    return showPreValidationUsage(preValidationErrors)
   }
-
-  // Input coercion and mangling based on config
-  const coercedArg = coerceArgs(appConfig, args)
 
   // Make changes to args and config prior to invoking command
   const {
     args: resolvedArgs,
     config: resolvedConfig
-  } = await resolveInputs(appConfig, coercedArg)
+  } = await resolveInputs(appConfig, args)
 
   // Show help and exit upon request
   if (resolvedArgs.options.help) {
@@ -327,7 +327,7 @@ module.exports = async (
   }
 
   // Create an update helper for showing usuage with resolved args/config
-  const showPostValidationUsage = createShowUsage(
+  const showUsage = createShowUsage(
     resolvedArgs,
     resolvedConfig,
     appProcess,
@@ -335,9 +335,9 @@ module.exports = async (
   )
 
   // Final validion on coerced inputs
-  const postCoercionErrors = validateInputs(resolvedConfig, resolvedArgs)
-  if (postCoercionErrors.length) {
-    return showPostValidationUsage(postCoercionErrors)
+  const postValidationErrors = validateInputs(resolvedConfig, resolvedArgs)
+  if (postValidationErrors.length) {
+    return showUsage(postValidationErrors)
   }
 
   // Find the handler and invoke it
@@ -356,6 +356,6 @@ module.exports = async (
     return response
   } catch (error) {
     if (args.verbose) appConsole.error(error)
-    return showPostValidationUsage([error])
+    return showUsage([error])
   }
 }
