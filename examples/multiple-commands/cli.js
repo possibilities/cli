@@ -4,6 +4,7 @@ const createCli = require('../../src/index')
 
 createCli({
   description: 'My cli',
+  environmentPrefix: 'MY_CLI',
   commands: [
     {
       name: 'show',
@@ -12,7 +13,8 @@ createCli({
         {
           name: 'name',
           description: 'Name of thing',
-          required: true
+          required: true,
+          environmentName: 'EXPLICIT_NAME'
         }
       ]
     },
