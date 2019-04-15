@@ -1,5 +1,4 @@
 const test = require('ava')
-const dedent = require('dedent')
 const { spawn } = require('child-process-promise')
 
 const getOutput = stream => new Promise(resolve => {

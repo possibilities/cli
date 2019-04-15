@@ -32,7 +32,7 @@ createCli({
       commands: [
         {
           name: 'fix',
-          description: 'Fix things',
+          description: 'Fix things'
         },
         {
           name: 'break',
@@ -41,5 +41,5 @@ createCli({
       ]
     }
   ],
-  handlersRoot: __dirname,
+  handlersRoot: __dirname
 })

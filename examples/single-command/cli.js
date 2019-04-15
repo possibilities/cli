@@ -9,5 +9,5 @@ createCli({
     description: 'Name of thing',
     required: true
   }],
-  handlersRoot: __dirname,
+  handlersRoot: __dirname
 })

@@ -172,7 +172,7 @@ test('runs with string option', async t => {
         type: 'string'
       }],
       handlers: echoArgsHandler
-    },
+    }
   )
   t.deepEqual(response.args, { foo: 'bar' })
 })
@@ -188,7 +188,7 @@ test('runs with string option with default', async t => {
         default: 'buff'
       }],
       handlers: echoArgsHandler
-    },
+    }
   )
   t.deepEqual(response.args, { foo: 'buff' })
 })
@@ -218,7 +218,7 @@ test('runs with omitted boolean option', async t => {
         type: 'boolean'
       }],
       handlers: echoArgsHandler
-    },
+    }
   )
   t.deepEqual(response.args, { foo: false })
 })
@@ -234,7 +234,7 @@ test('runs with omitted boolean option with default', async t => {
         default: true
       }],
       handlers: echoArgsHandler
-    },
+    }
   )
   t.deepEqual(response.args, { foo: true })
 })
@@ -249,7 +249,7 @@ test('runs with negative boolean option', async t => {
         type: 'boolean'
       }],
       handlers: echoArgsHandler
-    },
+    }
   )
   t.deepEqual(response.args, { foo: false })
 })
@@ -1189,7 +1189,7 @@ test('errors when multiple required options are missing', async t => {
         }
       ],
       handlers: echoArgsHandler
-    },
+    }
   )
   const expected = dedent`
   Usage: example-app [options]
@@ -1222,7 +1222,7 @@ test('errors given a non-existent option', async t => {
         required: true
       }],
       handlers: echoArgsHandler
-    },
+    }
   )
   const expected = dedent`
   Usage: example-app [options]
@@ -1253,7 +1253,7 @@ test('errors given multiple non-existent options', async t => {
         required: true
       }],
       handlers: echoArgsHandler
-    },
+    }
   )
   const expected = dedent`
   Usage: example-app [options]
@@ -1291,7 +1291,7 @@ test('errors when required option is missing for command', async t => {
         }
       ],
       handlers: echoArgsHandler
-    },
+    }
   )
   const expected = dedent`
   Usage: example-app show [options]
@@ -1330,7 +1330,7 @@ test('errors when option value is missing for command', async t => {
         }
       ],
       handlers: echoArgsHandler
-    },
+    }
   )
   const expected = dedent`
   Usage: example-app show [options]
@@ -1376,7 +1376,7 @@ test('errors when multiple option values are missing for command', async t => {
         }
       ],
       handlers: echoArgsHandler
-    },
+    }
   )
   const expected = dedent`
   Usage: example-app show [options]
@@ -1417,7 +1417,7 @@ test('errors given a non-existent option for command', async t => {
         }
       ],
       handlers: echoArgsHandler
-    },
+    }
   )
   const expected = dedent`
   Usage: example-app show [options]
@@ -1465,7 +1465,7 @@ test('errors when multiple required options are missing for command', async t =>
         }
       ],
       handlers: echoArgsHandler
-    },
+    }
   )
   const expected = dedent`
   Usage: example-app show [options]
@@ -1521,7 +1521,7 @@ test('errors when required option is missing for command in command group', asyn
         ]
       }],
       handlers: echoArgsHandler
-    },
+    }
   )
   const expected = dedent`
   Usage: example-app users show [options]
@@ -1759,7 +1759,7 @@ test('errors when multiple required options are missing for command in command g
         ]
       }],
       handlers: echoArgsHandler
-    },
+    }
   )
 
   const expected = dedent`

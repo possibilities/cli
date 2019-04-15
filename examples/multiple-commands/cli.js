@@ -21,5 +21,5 @@ createCli({
       description: 'List things'
     }
   ],
-  handlersRoot: __dirname,
+  handlersRoot: __dirname
 })
