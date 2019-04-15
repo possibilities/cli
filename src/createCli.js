@@ -270,15 +270,12 @@ const loadHandlers = config => {
   return handlers
 }
 
-module.exports = async (
-  config,
-  {
-    // TODO Move all of these into the config
-    handlers,
+module.exports = async (config) => {
+  const {
     appProcess = process,
     appConsole = console
-  } = {}
-) => {
+  } = config
+
   const args = parseArgs(appProcess.argv)
   const appConfig = prepareConfig(config, args)
 
@@ -322,7 +319,7 @@ module.exports = async (
     return showUsage(postValidationErrors)
   }
 
-  const resolvedHandlers = handlers || loadHandlers(config)
+  const resolvedHandlers = config.handlers || loadHandlers(config)
 
   // Find the handler and invoke it
   const handler = resolveHandler(resolvedArgs, resolvedHandlers)
