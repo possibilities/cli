@@ -11,31 +11,35 @@ test('runs', async t => {
   t.deepEqual(response.args, {})
 })
 
-const configWithCommands = {
-  commands: [
-    { name: 'show', description: 'Show things' },
-    { name: 'list', description: 'List things' }
-  ]
-}
-
-const handlersWithCommands = {
-  show: echoArgsHandler,
-  list: echoArgsHandler
-}
-
 test('runs command', async t => {
   t.plan(4)
   const { response: response1 } = await testCli(
     'node example-app show',
-    configWithCommands,
-    handlersWithCommands
+    {
+      commands: [
+        { name: 'show', description: 'Show things' },
+        { name: 'list', description: 'List things' }
+      ]
+    },
+    {
+      show: echoArgsHandler,
+      list: echoArgsHandler
+    }
   )
   t.deepEqual(response1.args, {})
   t.deepEqual(response1.positional, { commands: ['show'] })
   const { response: response2 } = await testCli(
     'node example-app list',
-    configWithCommands,
-    handlersWithCommands
+    {
+      commands: [
+        { name: 'show', description: 'Show things' },
+        { name: 'list', description: 'List things' }
+      ]
+    },
+    {
+      show: echoArgsHandler,
+      list: echoArgsHandler
+    }
   )
   t.deepEqual(response2.args, {})
   t.deepEqual(response2.positional, { commands: ['list'] })
@@ -333,8 +337,16 @@ test('shows help with commands', async t => {
   t.plan(2)
   const { output, exitCode } = await testCli(
     'node example-app --help',
-    configWithCommands,
-    handlersWithCommands
+    {
+      commands: [
+        { name: 'show', description: 'Show things' },
+        { name: 'list', description: 'List things' }
+      ]
+    },
+    {
+      show: echoArgsHandler,
+      list: echoArgsHandler
+    }
   )
   const expected = dedent`
   Usage: example-app <command> [options]
@@ -516,8 +528,17 @@ test('runs default command', async t => {
   t.plan(2)
   const { response } = await testCli(
     'node example-app',
-    { ...configWithCommands, defaultCommand: 'show' },
-    handlersWithCommands
+    {
+      commands: [
+        { name: 'show', description: 'Show things' },
+        { name: 'list', description: 'List things' }
+      ],
+      defaultCommand: 'show'
+    },
+    {
+      show: echoArgsHandler,
+      list: echoArgsHandler
+    }
   )
   t.deepEqual(response.args, {})
   t.deepEqual(response.positional, { commands: ['show'] })
@@ -657,8 +678,16 @@ test('errors given non-existent command', async t => {
   t.plan(2)
   const { output, exitCode } = await testCli(
     'node example-app foo',
-    configWithCommands,
-    handlersWithCommands
+    {
+      commands: [
+        { name: 'show', description: 'Show things' },
+        { name: 'list', description: 'List things' }
+      ],
+    },
+    {
+      show: echoArgsHandler,
+      list: echoArgsHandler
+    }
   )
 
   const expected = dedent`
@@ -819,8 +848,16 @@ test('errors when command is missing', async t => {
   t.plan(2)
   const { output, exitCode } = await testCli(
     'node example-app',
-    configWithCommands,
-    handlersWithCommands
+    {
+      commands: [
+        { name: 'show', description: 'Show things' },
+        { name: 'list', description: 'List things' }
+      ],
+    },
+    {
+      show: echoArgsHandler,
+      list: echoArgsHandler
+    }
   )
 
   const expected = dedent`
@@ -899,8 +936,17 @@ test('shows help with default command', async t => {
   t.plan(2)
   const { output, exitCode } = await testCli(
     'node example-app --help',
-    { ...configWithCommands, defaultCommand: 'show' },
-    handlersWithCommands
+    {
+      defaultCommand: 'show',
+      commands: [
+        { name: 'show', description: 'Show things' },
+        { name: 'list', description: 'List things' }
+      ]
+    },
+    {
+      show: echoArgsHandler,
+      list: echoArgsHandler
+    }
   )
 
   const expected = dedent`
