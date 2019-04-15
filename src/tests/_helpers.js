@@ -3,7 +3,7 @@ const repeat = require('lodash/repeat')
 
 const indentBy = (data = '', depth) => repeat('  ', depth) + data
 
-module.exports.testCli = async (command, config, handlers) => {
+module.exports.testCli = async (command, config, options) => {
   // Simulate the logger used internally so that we can check out the
   // string value of all outputs
   let depth = 0
@@ -25,7 +25,7 @@ module.exports.testCli = async (command, config, handlers) => {
   // Create a CLI and capture as much as possible for test assertions
   let exitCode
   const response = await createCli(config, {
-    handlers,
+    ...options,
     appProcess: {
       exit: code => {
         exitCode = code

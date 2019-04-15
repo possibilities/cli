@@ -1,6 +1,14 @@
 const test = require('ava')
+const { testCli } = require('./_helpers')
 
-test.todo('loads handlers from filesystem')
+const echoArgsHandler = (args, positional) => ({ args, positional })
+
+test('loads handlers from filesystem', async t => {
+  t.plan(1)
+  const { response } =
+    await testCli('node example-app', {}, { handlers: echoArgsHandler })
+  t.deepEqual(response.args, {})
+})
 
 test.todo('loads command handlers with from filesystem')
 

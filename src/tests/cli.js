@@ -7,7 +7,7 @@ const echoArgsHandler = (args, positional) => ({ args, positional })
 test('runs', async t => {
   t.plan(1)
   const { response } =
-    await testCli('node example-app', {}, echoArgsHandler)
+    await testCli('node example-app', {}, { handlers: echoArgsHandler })
   t.deepEqual(response.args, {})
 })
 
@@ -22,8 +22,10 @@ test('runs command', async t => {
       ]
     },
     {
-      show: echoArgsHandler,
-      list: echoArgsHandler
+      handlers: {
+        show: echoArgsHandler,
+        list: echoArgsHandler
+      }
     }
   )
   t.deepEqual(response1.args, {})
@@ -37,8 +39,10 @@ test('runs command', async t => {
       ]
     },
     {
-      show: echoArgsHandler,
-      list: echoArgsHandler
+      handlers: {
+        show: echoArgsHandler,
+        list: echoArgsHandler
+      }
     }
   )
   t.deepEqual(response2.args, {})
@@ -84,7 +88,7 @@ test('runs command in command group', async t => {
   const { response: response1 } = await testCli(
     'node example-app users show',
     config,
-    handlers
+    { handlers }
   )
   t.deepEqual(response1.args, {})
   t.deepEqual(response1.positional.commands, ['users', 'show'])
@@ -92,7 +96,7 @@ test('runs command in command group', async t => {
   const { response: response2 } = await testCli(
     'node example-app util break',
     config,
-    handlers
+    { handlers }
   )
 
   t.deepEqual(response2.args, {})
@@ -115,7 +119,7 @@ test('runs with option for command', async t => {
         }
       ]
     },
-    echoArgsHandler
+    { handlers: echoArgsHandler }
   )
   t.deepEqual(response.positional.commands, ['show'])
   t.deepEqual(response.args, { foo: 'bar1' })
@@ -150,13 +154,15 @@ test('runs with option for command in command group', async t => {
       }]
     },
     {
-      users: {
-        show: echoArgsHandler,
-        list: echoArgsHandler
-      },
-      util: {
-        fix: echoArgsHandler,
-        break: echoArgsHandler
+      handlers: {
+        users: {
+          show: echoArgsHandler,
+          list: echoArgsHandler
+        },
+        util: {
+          fix: echoArgsHandler,
+          break: echoArgsHandler
+        }
       }
     }
   )
@@ -174,7 +180,7 @@ test('runs with string option', async t => {
         type: 'string'
       }]
     },
-    echoArgsHandler
+    { handlers: echoArgsHandler }
   )
   t.deepEqual(response.args, { foo: 'bar' })
 })
@@ -190,7 +196,7 @@ test('runs with string option with default', async t => {
         default: 'buff'
       }]
     },
-    echoArgsHandler
+    { handlers: echoArgsHandler }
   )
   t.deepEqual(response.args, { foo: 'buff' })
 })
@@ -205,7 +211,7 @@ test('runs with boolean option', async t => {
         type: 'boolean'
       }]
     },
-    echoArgsHandler
+    { handlers: echoArgsHandler }
   )
   t.deepEqual(response.args, { foo: true })
 })
@@ -220,7 +226,7 @@ test('runs with omitted boolean option', async t => {
         type: 'boolean'
       }]
     },
-    echoArgsHandler
+    { handlers: echoArgsHandler }
   )
   t.deepEqual(response.args, { foo: false })
 })
@@ -236,7 +242,7 @@ test('runs with omitted boolean option with default', async t => {
         default: true
       }]
     },
-    echoArgsHandler
+    { handlers: echoArgsHandler }
   )
   t.deepEqual(response.args, { foo: true })
 })
@@ -251,7 +257,7 @@ test('runs with negative boolean option', async t => {
         type: 'boolean'
       }]
     },
-    echoArgsHandler
+    { handlers: echoArgsHandler }
   )
   t.deepEqual(response.args, { foo: false })
 })
@@ -284,13 +290,15 @@ test('shows help on error', async t => {
         ]
       }]
     }, {
-      users: {
-        show: echoArgsHandler,
-        list: echoArgsHandler
-      },
-      util: {
-        fix: echoArgsHandler,
-        break: echoArgsHandler
+      handlers: {
+        users: {
+          show: echoArgsHandler,
+          list: echoArgsHandler
+        },
+        util: {
+          fix: echoArgsHandler,
+          break: echoArgsHandler
+        }
       }
     }
   )
@@ -321,7 +329,7 @@ test('shows help', async t => {
   const { output, exitCode } = await testCli(
     'node example-app --help',
     {},
-    echoArgsHandler
+    { handlers: echoArgsHandler }
   )
   const expected = dedent`
   Usage: example-app [options]
@@ -390,13 +398,15 @@ test('shows help with command groups', async t => {
         ]
       }]
     }, {
-      users: {
-        show: echoArgsHandler,
-        list: echoArgsHandler
-      },
-      util: {
-        fix: echoArgsHandler,
-        break: echoArgsHandler
+      handlers: {
+        users: {
+          show: echoArgsHandler,
+          list: echoArgsHandler
+        },
+        util: {
+          fix: echoArgsHandler,
+          break: echoArgsHandler
+        }
       }
     }
   )
@@ -446,13 +456,15 @@ test('shows help for specific command group', async t => {
         ]
       }]
     }, {
-      users: {
-        show: echoArgsHandler,
-        list: echoArgsHandler
-      },
-      util: {
-        fix: echoArgsHandler,
-        break: echoArgsHandler
+      handlers: {
+        users: {
+          show: echoArgsHandler,
+          list: echoArgsHandler
+        },
+        util: {
+          fix: echoArgsHandler,
+          break: echoArgsHandler
+        }
       }
     }
   )
@@ -499,13 +511,15 @@ test('shows help for specific command in command group', async t => {
         ]
       }]
     }, {
-      users: {
-        show: echoArgsHandler,
-        list: echoArgsHandler
-      },
-      util: {
-        fix: echoArgsHandler,
-        break: echoArgsHandler
+      handlers: {
+        users: {
+          show: echoArgsHandler,
+          list: echoArgsHandler
+        },
+        util: {
+          fix: echoArgsHandler,
+          break: echoArgsHandler
+        }
       }
     }
   )
@@ -529,15 +543,17 @@ test('runs default command', async t => {
   const { response } = await testCli(
     'node example-app',
     {
+      defaultCommand: 'show',
       commands: [
         { name: 'show', description: 'Show things' },
         { name: 'list', description: 'List things' }
-      ],
-      defaultCommand: 'show'
+      ]
     },
     {
-      show: echoArgsHandler,
-      list: echoArgsHandler
+      handlers: {
+        show: echoArgsHandler,
+        list: echoArgsHandler
+      }
     }
   )
   t.deepEqual(response.args, {})
@@ -566,13 +582,15 @@ test('runs default command in group', async t => {
         ]
       }]
     }, {
-      users: {
-        show: echoArgsHandler,
-        list: echoArgsHandler
-      },
-      util: {
-        fix: echoArgsHandler,
-        break: echoArgsHandler
+      handlers: {
+        users: {
+          show: echoArgsHandler,
+          list: echoArgsHandler
+        },
+        util: {
+          fix: echoArgsHandler,
+          break: echoArgsHandler
+        }
       }
     }
   )
@@ -603,13 +621,15 @@ test('runs command in default group', async t => {
         ]
       }]
     }, {
-      users: {
-        show: echoArgsHandler,
-        list: echoArgsHandler
-      },
-      util: {
-        fix: echoArgsHandler,
-        break: echoArgsHandler
+      handlers: {
+        users: {
+          show: echoArgsHandler,
+          list: echoArgsHandler
+        },
+        util: {
+          fix: echoArgsHandler,
+          break: echoArgsHandler
+        }
       }
     }
   )
@@ -640,13 +660,15 @@ test('runs default command in default group', async t => {
         ]
       }]
     }, {
-      users: {
-        show: echoArgsHandler,
-        list: echoArgsHandler
-      },
-      util: {
-        fix: echoArgsHandler,
-        break: echoArgsHandler
+      handlers: {
+        users: {
+          show: echoArgsHandler,
+          list: echoArgsHandler
+        },
+        util: {
+          fix: echoArgsHandler,
+          break: echoArgsHandler
+        }
       }
     }
   )
@@ -659,7 +681,7 @@ test('errors when handler throws error', async t => {
   const { output, exitCode } = await testCli(
     'node example-app foo',
     {},
-    () => { throw new Error('Everything is ruined!') }
+    { handlers: () => { throw new Error('Everything is ruined!') } }
   )
   const expected = dedent`
   Usage: example-app [options]
@@ -728,13 +750,15 @@ test('errors given non-existent command in command group', async t => {
         ]
       }]
     }, {
-      users: {
-        show: echoArgsHandler,
-        list: echoArgsHandler
-      },
-      util: {
-        fix: echoArgsHandler,
-        break: echoArgsHandler
+      handlers: {
+        users: {
+          show: echoArgsHandler,
+          list: echoArgsHandler
+        },
+        util: {
+          fix: echoArgsHandler,
+          break: echoArgsHandler
+        }
       }
     }
   )
@@ -792,7 +816,7 @@ test('errors given non-existent group', async t => {
   const { output: output1, exitCode: exitCode1 } = await testCli(
     'node example-app fooz',
     config,
-    handlers
+    { handlers }
   )
 
   const expected1 = dedent`
@@ -819,7 +843,7 @@ test('errors given non-existent group', async t => {
   const { output: output2, exitCode: exitCode2 } = await testCli(
     'node example-app fooz barz',
     config,
-    handlers
+    { handlers }
   )
 
   const expected2 = dedent`
@@ -899,13 +923,15 @@ test('errors when command group is missing', async t => {
         ]
       }]
     }, {
-      users: {
-        show: echoArgsHandler,
-        list: echoArgsHandler
-      },
-      util: {
-        fix: echoArgsHandler,
-        break: echoArgsHandler
+      handlers: {
+        users: {
+          show: echoArgsHandler,
+          list: echoArgsHandler
+        },
+        util: {
+          fix: echoArgsHandler,
+          break: echoArgsHandler
+        }
       }
     }
   )
@@ -985,13 +1011,15 @@ test('shows help with default command group', async t => {
         ]
       }]
     }, {
-      users: {
-        show: echoArgsHandler,
-        list: echoArgsHandler
-      },
-      util: {
-        fix: echoArgsHandler,
-        break: echoArgsHandler
+      handlers: {
+        users: {
+          show: echoArgsHandler,
+          list: echoArgsHandler
+        },
+        util: {
+          fix: echoArgsHandler,
+          break: echoArgsHandler
+        }
       }
     }
   )
@@ -1019,7 +1047,7 @@ test('shows help with description', async t => {
   const { output, exitCode } = await testCli(
     'node example-app --help',
     { description: 'An example app' },
-    echoArgsHandler
+    { handlers: echoArgsHandler }
   )
   const expected = dedent`
   Usage: example-app [options]
@@ -1046,7 +1074,7 @@ test('errors when required option is missing', async t => {
         required: true
       }]
     },
-    echoArgsHandler
+    { handlers: echoArgsHandler }
   )
   const expected = dedent`
   Usage: example-app [options]
@@ -1077,7 +1105,7 @@ test('errors when option value is missing', async t => {
         required: true
       }]
     },
-    echoArgsHandler
+    { handlers: echoArgsHandler }
   )
   const expected = dedent`
   Usage: example-app [options]
@@ -1116,7 +1144,7 @@ test('errors when multiple option values are missing', async t => {
         }
       ]
     },
-    echoArgsHandler
+    { handlers: echoArgsHandler }
   )
   const expected = dedent`
   Usage: example-app [options]
@@ -1157,7 +1185,7 @@ test('errors when multiple required options are missing', async t => {
         }
       ]
     },
-    echoArgsHandler
+    { handlers: echoArgsHandler }
   )
   const expected = dedent`
   Usage: example-app [options]
@@ -1190,7 +1218,7 @@ test('errors given a non-existent option', async t => {
         required: true
       }]
     },
-    echoArgsHandler
+    { handlers: echoArgsHandler }
   )
   const expected = dedent`
   Usage: example-app [options]
@@ -1221,7 +1249,7 @@ test('errors given multiple non-existent options', async t => {
         required: true
       }]
     },
-    echoArgsHandler
+    { handlers: echoArgsHandler }
   )
   const expected = dedent`
   Usage: example-app [options]
@@ -1259,7 +1287,7 @@ test('errors when required option is missing for command', async t => {
         }
       ]
     },
-    echoArgsHandler
+    { handlers: echoArgsHandler }
   )
   const expected = dedent`
   Usage: example-app show [options]
@@ -1298,7 +1326,7 @@ test('errors when option value is missing for command', async t => {
         }
       ]
     },
-    echoArgsHandler
+    { handlers: echoArgsHandler }
   )
   const expected = dedent`
   Usage: example-app show [options]
@@ -1344,7 +1372,7 @@ test('errors when multiple option values are missing for command', async t => {
         }
       ]
     },
-    echoArgsHandler
+    { handlers: echoArgsHandler }
   )
   const expected = dedent`
   Usage: example-app show [options]
@@ -1385,7 +1413,7 @@ test('errors given a non-existent option for command', async t => {
         }
       ]
     },
-    echoArgsHandler
+    { handlers: echoArgsHandler }
   )
   const expected = dedent`
   Usage: example-app show [options]
@@ -1433,7 +1461,7 @@ test('errors when multiple required options are missing for command', async t =>
         }
       ]
     },
-    echoArgsHandler
+    { handlers: echoArgsHandler }
   )
   const expected = dedent`
   Usage: example-app show [options]
@@ -1489,7 +1517,7 @@ test('errors when required option is missing for command in command group', asyn
         ]
       }]
     },
-    echoArgsHandler
+    { handlers: echoArgsHandler }
   )
   const expected = dedent`
   Usage: example-app users show [options]
@@ -1545,7 +1573,7 @@ test('errors when option value is missing for command in command group', async t
         ]
       }]
     },
-    echoArgsHandler
+    { handlers: echoArgsHandler }
   )
   const expected = dedent`
   Usage: example-app users show [options]
@@ -1607,7 +1635,7 @@ test('errors when multiple option values are missing for command in command grou
         ]
       }]
     },
-    echoArgsHandler
+    { handlers: echoArgsHandler }
   )
   const expected = dedent`
   Usage: example-app users show [options]
@@ -1665,7 +1693,7 @@ test('errors given a non-existent option for command in command group', async t 
         ]
       }]
     },
-    echoArgsHandler
+    { handlers: echoArgsHandler }
   )
   const expected = dedent`
   Usage: example-app users show [options]
@@ -1727,7 +1755,7 @@ test('errors when multiple required options are missing for command in command g
         ]
       }]
     },
-    echoArgsHandler
+    { handlers: echoArgsHandler }
   )
 
   const expected = dedent`
