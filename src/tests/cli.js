@@ -1,8 +1,15 @@
 import test from 'ava'
 import dedent from 'dedent'
 const { testCli } = require('./_helpers.js')
+const { spawn } = require('child-process-promise')
 
 const echoArgsHandler = (args, positional) => ({ args, positional })
+
+const getOutput = stream => new Promise(resolve => {
+  const chunks = []
+  stream.on('data', chunk => chunks.push(chunk))
+  stream.on('end', () => resolve(chunks.join('')))
+})
 
 test('runs', async t => {
   t.plan(1)
@@ -304,8 +311,9 @@ test('shows help on error', async t => {
       example-app util fix    Fix things
       example-app util break  Break things
 
-  Option
-    --help  Show usage
+  Options
+    --help     Show usage
+    --version  Show version
 
   Errors
     \`group\` argument is required
@@ -324,9 +332,10 @@ test('shows help', async t => {
   const expected = dedent`
   Usage: example-app [options]
 
-  Option
-    --help  Show usage `
-
+  Options
+    --help     Show usage
+    --version  Show version
+  `
   t.is(expected, output)
   t.is(exitCode, 1)
 })
@@ -353,8 +362,9 @@ test('shows help with commands', async t => {
     example-app show  Show things
     example-app list  List things
 
-  Option
-    --help  Show usage
+  Options
+    --help     Show usage
+    --version  Show version
   `
   t.is(expected, output)
   t.is(exitCode, 1)
@@ -410,8 +420,9 @@ test('shows help with command groups', async t => {
       example-app util fix    Fix things
       example-app util break  Break things
 
-  Option
-    --help  Show usage
+  Options
+    --help     Show usage
+    --version  Show version
   `
   t.is(expected, output)
   t.is(exitCode, 1)
@@ -464,8 +475,9 @@ test('shows help for specific command group', async t => {
       example-app users show  Show user
       example-app users list  List users
 
-  Option
-    --help  Show usage
+  Options
+    --help     Show usage
+    --version  Show version
   `
   t.is(expected, output)
   t.is(exitCode, 1)
@@ -518,8 +530,9 @@ test('shows help for specific command in command group', async t => {
       example-app users show  Show user
       example-app users list  List users
 
-  Option
-    --help  Show usage
+  Options
+    --help     Show usage
+    --version  Show version
   `
   t.is(expected, output)
   t.is(exitCode, 1)
@@ -667,8 +680,9 @@ test('errors when handler throws error', async t => {
   const expected = dedent`
   Usage: example-app [options]
 
-  Option
-    --help  Show usage
+  Options
+    --help     Show usage
+    --version  Show version
 
   Error
     Everything is ruined!
@@ -700,8 +714,9 @@ test('errors given non-existent command', async t => {
     example-app show  Show things
     example-app list  List things
 
-  Option
-    --help  Show usage
+  Options
+    --help     Show usage
+    --version  Show version
 
   Error
     \`foo\` command does not exist
@@ -751,8 +766,9 @@ test('errors given non-existent command in command group', async t => {
       example-app users show  Show user
       example-app users list  List users
 
-  Option
-    --help  Show usage
+  Options
+    --help     Show usage
+    --version  Show version
 
   Error
     \`foo\` command does not exist in \`users\` group
@@ -808,8 +824,9 @@ test('errors given non-existent group', async t => {
       example-app util fix    Fix things
       example-app util break  Break things
 
-  Option
-    --help  Show usage
+  Options
+    --help     Show usage
+    --version  Show version
 
   Error
     \`fooz\` group does not exist
@@ -861,8 +878,9 @@ test('errors given non-existent group', async t => {
       example-app util fix    Fix things
       example-app util break  Break things
 
-  Option
-    --help  Show usage
+  Options
+    --help     Show usage
+    --version  Show version
 
   Error
     \`fooz\` group does not exist
@@ -895,8 +913,9 @@ test('errors when command is missing', async t => {
     example-app show  Show things
     example-app list  List things
 
-  Option
-    --help  Show usage
+  Options
+    --help     Show usage
+    --version  Show version
 
   Error
     \`command\` argument is required
@@ -950,8 +969,9 @@ test('errors when command group is missing', async t => {
       example-app util fix    Fix things
       example-app util break  Break things
 
-  Option
-    --help  Show usage
+  Options
+    --help     Show usage
+    --version  Show version
 
   Errors
     \`group\` argument is required
@@ -985,8 +1005,9 @@ test('shows help with default command', async t => {
     example-app show  Show things (default)
     example-app list  List things
 
-  Option
-    --help  Show usage
+  Options
+    --help     Show usage
+    --version  Show version
   `
   t.is(output, expected)
   t.is(exitCode, 1)
@@ -1037,8 +1058,9 @@ test('shows help with default command group', async t => {
       example-app users show  Show user
       example-app users list  List users
 
-  Option
-    --help  Show usage
+  Options
+    --help     Show usage
+    --version  Show version
   `
   t.is(output, expected)
   t.is(exitCode, 1)
@@ -1058,9 +1080,10 @@ test('shows help with description', async t => {
 
   An example app
 
-  Option
-    --help  Show usage `
-
+  Options
+    --help     Show usage
+    --version  Show version
+  `
   t.is(expected, output)
   t.is(exitCode, 1)
 })
@@ -1086,8 +1109,9 @@ test('errors when required option is missing', async t => {
   An example app
 
   Options
-    --foo   Name of foo
-    --help  Show usage
+    --foo      Name of foo
+    --help     Show usage
+    --version  Show version
 
   Error
     \`foo\` option is required
@@ -1117,8 +1141,9 @@ test('errors when option value is missing', async t => {
   An example app
 
   Options
-    --foo   Name of foo
-    --help  Show usage
+    --foo      Name of foo
+    --help     Show usage
+    --version  Show version
 
   Error
     \`foo\` option requires a value
@@ -1156,9 +1181,10 @@ test('errors when multiple option values are missing', async t => {
   An example app
 
   Options
-    --foo   Name of foo
-    --bar   Name of bar
-    --help  Show usage
+    --foo      Name of foo
+    --bar      Name of bar
+    --help     Show usage
+    --version  Show version
 
   Errors
     \`foo\` option requires a value
@@ -1197,9 +1223,10 @@ test('errors when multiple required options are missing', async t => {
   An example app
 
   Options
-    --foo   Name of foo
-    --bar   Name of bar
-    --help  Show usage
+    --foo      Name of foo
+    --bar      Name of bar
+    --help     Show usage
+    --version  Show version
 
   Errors
     \`foo\` option is required
@@ -1230,8 +1257,9 @@ test('errors given a non-existent option', async t => {
   An example app
 
   Options
-    --foo   Name of foo
-    --help  Show usage
+    --foo      Name of foo
+    --help     Show usage
+    --version  Show version
 
   Error
     \`moof\` option does not exist
@@ -1261,8 +1289,9 @@ test('errors given multiple non-existent options', async t => {
   An example app
 
   Options
-    --foo   Name of foo
-    --help  Show usage
+    --foo      Name of foo
+    --help     Show usage
+    --version  Show version
 
   Errors
     \`doof\` option does not exist
@@ -1302,8 +1331,9 @@ test('errors when required option is missing for command', async t => {
     example-app show  Show things
 
   Options
-    --foo   Name of foo
-    --help  Show usage
+    --foo      Name of foo
+    --help     Show usage
+    --version  Show version
 
   Error
     \`foo\` option is required
@@ -1341,8 +1371,9 @@ test('errors when option value is missing for command', async t => {
     example-app show  Show things
 
   Options
-    --foo   Name of foo
-    --help  Show usage
+    --foo      Name of foo
+    --help     Show usage
+    --version  Show version
 
   Error
     \`foo\` option requires a value
@@ -1387,9 +1418,10 @@ test('errors when multiple option values are missing for command', async t => {
     example-app show  Show things
 
   Options
-    --foo   Name of foo
-    --bar   Name of bar
-    --help  Show usage
+    --foo      Name of foo
+    --bar      Name of bar
+    --help     Show usage
+    --version  Show version
 
   Errors
     \`foo\` option requires a value
@@ -1428,8 +1460,9 @@ test('errors given a non-existent option for command', async t => {
     example-app show  Show things
 
   Options
-    --foo   Name of foo
-    --help  Show usage
+    --foo      Name of foo
+    --help     Show usage
+    --version  Show version
 
   Error
     \`zoo\` option does not exist
@@ -1476,9 +1509,10 @@ test('errors when multiple required options are missing for command', async t =>
     example-app show  Show things
 
   Options
-    --foo   Name of foo
-    --bar   Name of bar
-    --help  Show usage
+    --foo      Name of foo
+    --bar      Name of bar
+    --help     Show usage
+    --version  Show version
 
   Errors
     \`foo\` option is required
@@ -1534,8 +1568,9 @@ test('errors when required option is missing for command in command group', asyn
       example-app users list  List users
 
   Options
-    --foo   Name of foo
-    --help  Show usage
+    --foo      Name of foo
+    --help     Show usage
+    --version  Show version
 
   Error
     \`foo\` option is required
@@ -1590,8 +1625,9 @@ test('errors when option value is missing for command in command group', async t
       example-app users list  List users
 
   Options
-    --foo   Name of foo
-    --help  Show usage
+    --foo      Name of foo
+    --help     Show usage
+    --version  Show version
 
   Error
     \`foo\` option requires a value
@@ -1652,9 +1688,10 @@ test('errors when multiple option values are missing for command in command grou
       example-app users list  List users
 
   Options
-    --foo   Name of foo
-    --bar   Name of bar
-    --help  Show usage
+    --foo      Name of foo
+    --bar      Name of bar
+    --help     Show usage
+    --version  Show version
 
   Errors
     \`foo\` option requires a value
@@ -1710,8 +1747,9 @@ test('errors given a non-existent option for command in command group', async t 
       example-app users list  List users
 
   Options
-    --foo   Name of foo
-    --help  Show usage
+    --foo      Name of foo
+    --help     Show usage
+    --version  Show version
 
   Error
     \`zoo\` option does not exist
@@ -1773,9 +1811,10 @@ test('errors when multiple required options are missing for command in command g
       example-app users list  List users
 
   Options
-    --foo   Name of foo
-    --bar   Name of bar
-    --help  Show usage
+    --foo      Name of foo
+    --bar      Name of bar
+    --help     Show usage
+    --version  Show version
 
   Errors
     \`foo\` option is required
@@ -1785,7 +1824,20 @@ test('errors when multiple required options are missing for command in command g
   t.is(expected, output)
 })
 
-test.todo('shows app version')
+test.only('shows app version', async t => {
+  t.plan(1)
+  try {
+    const response = spawn(
+      './examples/single-command/cli.js',
+      ['--version']
+    )
+    const output = await getOutput(response.childProcess.stdout)
+    await response
+    t.is(output.trim(), '0.0.0')
+  } catch (error) {
+    t.fail()
+  }
+})
 
 test.todo('accepts input from environment based on prefix')
 

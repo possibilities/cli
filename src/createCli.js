@@ -8,8 +8,6 @@ const partition = require('lodash/partition')
 const isFunction = require('lodash/isFunction')
 const createShowUsage = require('./createShowUsage')
 
-// TODO this file is a huge pile, needs much work
-
 const invokeCommand = async (
   config,
   args,
@@ -224,20 +222,29 @@ const preValidationValidation = (config, args) => {
     .map(option => new Error(`\`${option}\` option does not exist`))
 }
 
-const helpOption = {
-  name: 'help',
-  type: 'boolean',
-  description: 'Show usage',
-  default: false,
-  system: true
-}
+const systemOptions = [
+  {
+    name: 'help',
+    type: 'boolean',
+    description: 'Show usage',
+    default: false,
+    system: true
+  },
+  {
+    name: 'version',
+    type: 'boolean',
+    description: 'Show version',
+    default: false,
+    system: true
+  }
+]
 
 const prepareConfig = (config, args) => {
   // Build up a list of possible options and include common items such
   // as `--help` and `--version`
   const appOptions = findActiveOptions(config, args)
     .map(option => ({ ...option, type: option.type || 'string' }))
-  const options = [ ...appOptions, helpOption ]
+  const options = [ ...appOptions, ...systemOptions ]
 
   // Build a list of expected positional items.
   // TODO support additional positional items after group/command
@@ -268,6 +275,11 @@ const loadHandlers = config => {
     })
   }
   return handlers
+}
+
+const showVersion = appRoot => {
+  const { version } = require(join(appRoot, 'package.json'))
+  console.info(version)
 }
 
 module.exports = async (config) => {
@@ -303,6 +315,11 @@ module.exports = async (config) => {
   // Show help and exit upon request
   if (resolvedArgs.options.help) {
     return showPreResolveUsage()
+  }
+
+  if (resolvedArgs.options.version) {
+    // TODO makes `handlersRoot` seem mis-named
+    return showVersion(appConfig.handlersRoot)
   }
 
   // Create an update helper for showing usuage with resolved args/config
