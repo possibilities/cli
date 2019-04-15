@@ -260,9 +260,10 @@ const loadHandlers = config => {
   }
   if (config.groups) {
     config.groups.forEach(group => {
+      handlers[group.name] = {}
       group.commands.forEach(command => {
         handlers[group.name][command.name] =
-          require(join(config.handlersRoot, command.name))
+          require(join(config.handlersRoot, group.name, command.name) + '.js')
       })
     })
   }

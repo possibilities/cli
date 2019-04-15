@@ -46,6 +46,41 @@ test('loads multiple commands from filesystem', async t => {
   }
 })
 
-test.todo('loads command group from filesystem')
+test('loads command group from filesystem', async t => {
+  t.plan(4)
+  try {
+    const response1 = spawn(
+      './examples/command-groups/cli.js',
+      ['users', 'show', '--name', 'foo']
+    )
+    const output1 = await getOutput(response1.childProcess.stdout)
+    await response1
+    t.is(output1.trim(), 'command groups: showing foo user!')
 
-test.todo('loads commands with custom loader')
+    const response2 = spawn(
+      './examples/command-groups/cli.js',
+      ['users', 'list']
+    )
+    const output2 = await getOutput(response2.childProcess.stdout)
+    await response2
+    t.is(output2.trim(), 'command groups: listing users!')
+
+    const response3 = spawn(
+      './examples/command-groups/cli.js',
+      ['util', 'fix']
+    )
+    const output3 = await getOutput(response3.childProcess.stdout)
+    await response3
+    t.is(output3.trim(), 'command groups: fixing things util!')
+
+    const response4 = spawn(
+      './examples/command-groups/cli.js',
+      ['util', 'break']
+    )
+    const output4 = await getOutput(response4.childProcess.stdout)
+    await response4
+    t.is(output4.trim(), 'command groups: breaking things util!')
+  } catch (error) {
+    t.fail()
+  }
+})

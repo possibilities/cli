@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 
 const createCli = require('../../src/index')
+
 createCli({
   description: 'My cli',
   commands: [
