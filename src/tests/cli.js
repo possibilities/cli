@@ -63,10 +63,7 @@ test('runs command in command group', async t => {
         {
           name: 'list',
           description: 'List users',
-          options: [{
-            name: 'foo',
-            type: 'string'
-          }]
+          options: [{ name: 'foo' }]
         }
       ]
     }, {
@@ -113,10 +110,7 @@ test('runs with option for command', async t => {
         {
           name: 'show',
           description: 'Show things',
-          options: [{
-            name: 'foo',
-            type: 'string'
-          }]
+          options: [{ name: 'foo' }]
         }
       ],
       handlers: echoArgsHandler
@@ -139,10 +133,7 @@ test('runs with option for command in command group', async t => {
           {
             name: 'list',
             description: 'List users',
-            options: [{
-              name: 'foo',
-              type: 'string'
-            }]
+            options: [{ name: 'foo' }]
           }
         ]
       }, {
@@ -174,10 +165,7 @@ test('runs with string option', async t => {
   const { response } = await testCli(
     'node example-app --foo bar',
     {
-      options: [{
-        name: 'foo',
-        type: 'string'
-      }],
+      options: [{ name: 'foo' }],
       handlers: echoArgsHandler
     }
   )
@@ -191,7 +179,6 @@ test('runs with string option with default', async t => {
     {
       options: [{
         name: 'foo',
-        type: 'string',
         default: 'buff'
       }],
       handlers: echoArgsHandler
@@ -274,10 +261,7 @@ test('shows help on error', async t => {
           {
             name: 'list',
             description: 'List users',
-            options: [{
-              name: 'foo',
-              type: 'string'
-            }]
+            options: [{ name: 'foo' }]
           }
         ]
       }, {
@@ -383,10 +367,7 @@ test('shows help with command groups', async t => {
           {
             name: 'list',
             description: 'List users',
-            options: [{
-              name: 'foo',
-              type: 'string'
-            }]
+            options: [{ name: 'foo' }]
           }
         ]
       }, {
@@ -441,10 +422,7 @@ test('shows help for specific command group', async t => {
           {
             name: 'list',
             description: 'List users',
-            options: [{
-              name: 'foo',
-              type: 'string'
-            }]
+            options: [{ name: 'foo' }]
           }
         ]
       }, {
@@ -496,10 +474,7 @@ test('shows help for specific command in command group', async t => {
           {
             name: 'list',
             description: 'List users',
-            options: [{
-              name: 'foo',
-              type: 'string'
-            }]
+            options: [{ name: 'foo' }]
           }
         ]
       }, {
@@ -1096,7 +1071,6 @@ test('errors when required option is missing', async t => {
       description: 'An example app',
       options: [{
         name: 'foo',
-        type: 'string',
         description: 'Name of foo',
         required: true
       }],
@@ -1128,7 +1102,6 @@ test('errors when option value is missing', async t => {
       description: 'An example app',
       options: [{
         name: 'foo',
-        type: 'string',
         description: 'Name of foo',
         required: true
       }],
@@ -1161,13 +1134,11 @@ test('errors when multiple option values are missing', async t => {
       options: [
         {
           name: 'foo',
-          type: 'string',
           description: 'Name of foo',
           required: true
         },
         {
           name: 'bar',
-          type: 'string',
           description: 'Name of bar',
           required: true
         }
@@ -1203,13 +1174,11 @@ test('errors when multiple required options are missing', async t => {
       options: [
         {
           name: 'foo',
-          type: 'string',
           description: 'Name of foo',
           required: true
         },
         {
           name: 'bar',
-          type: 'string',
           description: 'Name of bar',
           required: true
         }
@@ -1244,7 +1213,6 @@ test('errors given a non-existent option', async t => {
       description: 'An example app',
       options: [{
         name: 'foo',
-        type: 'string',
         description: 'Name of foo',
         required: true
       }],
@@ -1276,7 +1244,6 @@ test('errors given multiple non-existent options', async t => {
       description: 'An example app',
       options: [{
         name: 'foo',
-        type: 'string',
         description: 'Name of foo',
         required: true
       }],
@@ -1313,7 +1280,6 @@ test('errors when required option is missing for command', async t => {
           description: 'Show things',
           options: [{
             name: 'foo',
-            type: 'string',
             description: 'Name of foo',
             required: true
           }]
@@ -1354,7 +1320,6 @@ test('errors when option value is missing for command', async t => {
           description: 'Show things',
           options: [{
             name: 'foo',
-            type: 'string',
             description: 'Name of foo'
           }]
         }
@@ -1395,12 +1360,10 @@ test('errors when multiple option values are missing for command', async t => {
           options: [
             {
               name: 'foo',
-              type: 'string',
               description: 'Name of foo'
             },
             {
               name: 'bar',
-              type: 'string',
               description: 'Name of bar'
             }
           ]
@@ -1443,7 +1406,6 @@ test('errors given a non-existent option for command', async t => {
           description: 'Show things',
           options: [{
             name: 'foo',
-            type: 'string',
             description: 'Name of foo'
           }]
         }
@@ -1484,13 +1446,11 @@ test('errors when multiple required options are missing for command', async t =>
           options: [
             {
               name: 'foo',
-              type: 'string',
               description: 'Name of foo',
               required: true
             },
             {
               name: 'bar',
-              type: 'string',
               description: 'Name of bar',
               required: true
             }
@@ -1538,7 +1498,6 @@ test('errors when required option is missing for command in command group', asyn
             options: [
               {
                 name: 'foo',
-                type: 'string',
                 description: 'Name of foo',
                 required: true
               }
@@ -1595,7 +1554,6 @@ test('errors when option value is missing for command in command group', async t
             options: [
               {
                 name: 'foo',
-                type: 'string',
                 description: 'Name of foo',
                 required: true
               }
@@ -1652,13 +1610,11 @@ test('errors when multiple option values are missing for command in command grou
             options: [
               {
                 name: 'foo',
-                type: 'string',
                 description: 'Name of foo',
                 required: true
               },
               {
                 name: 'bar',
-                type: 'string',
                 description: 'Name of bar',
                 required: true
               }
@@ -1717,7 +1673,6 @@ test('errors given a non-existent option for command in command group', async t 
             options: [
               {
                 name: 'foo',
-                type: 'string',
                 description: 'Name of foo',
                 required: true
               }
@@ -1774,13 +1729,11 @@ test('errors when multiple required options are missing for command in command g
             options: [
               {
                 name: 'foo',
-                type: 'string',
                 description: 'Name of foo',
                 required: true
               },
               {
                 name: 'bar',
-                type: 'string',
                 description: 'Name of bar',
                 required: true
               }
