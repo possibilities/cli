@@ -248,6 +248,171 @@ test('runs with negative boolean option', async t => {
   t.deepEqual(response.args, { foo: false })
 })
 
+test('runs default command', async t => {
+  t.plan(2)
+  const { response } = await testCli(
+    'node example-app',
+    {
+      defaultCommand: 'show',
+      commands: [
+        { name: 'show', description: 'Show things' },
+        { name: 'list', description: 'List things' }
+      ],
+      handlers: {
+        show: echoArgsHandler,
+        list: echoArgsHandler
+      }
+    }
+  )
+  t.deepEqual(response.args, {})
+  t.deepEqual(response.positional, { commands: ['show'] })
+})
+
+test('runs default command in group', async t => {
+  t.plan(2)
+  const { response } = await testCli(
+    'node example-app util',
+    {
+      groups: [{
+        name: 'users',
+        label: 'Users',
+        commands: [
+          { name: 'show', description: 'Show user' },
+          { name: 'list', description: 'List users' }
+        ]
+      }, {
+        name: 'util',
+        label: 'Utilities',
+        defaultCommand: 'break',
+        commands: [
+          { name: 'fix', description: 'Fix things' },
+          { name: 'break', description: 'Break things' }
+        ]
+      }],
+      handlers: {
+        users: {
+          show: echoArgsHandler,
+          list: echoArgsHandler
+        },
+        util: {
+          fix: echoArgsHandler,
+          break: echoArgsHandler
+        }
+      }
+    }
+  )
+  t.deepEqual(response.args, {})
+  t.deepEqual(response.positional, { commands: ['util', 'break'] })
+})
+
+test('runs command in default group', async t => {
+  t.plan(2)
+  const { response } = await testCli(
+    'node example-app break',
+    {
+      defaultGroup: 'util',
+      groups: [{
+        name: 'users',
+        label: 'Users',
+        commands: [
+          { name: 'show', description: 'Show user' },
+          { name: 'list', description: 'List users' }
+        ]
+      }, {
+        name: 'util',
+        label: 'Utilities',
+        defaultCommand: 'break',
+        commands: [
+          { name: 'fix', description: 'Fix things' },
+          { name: 'break', description: 'Break things' }
+        ]
+      }],
+      handlers: {
+        users: {
+          show: echoArgsHandler,
+          list: echoArgsHandler
+        },
+        util: {
+          fix: echoArgsHandler,
+          break: echoArgsHandler
+        }
+      }
+    }
+  )
+  t.deepEqual(response.args, {})
+  t.deepEqual(response.positional, { commands: ['util', 'break'] })
+})
+
+test('runs default command in default group', async t => {
+  t.plan(2)
+  const { response } = await testCli(
+    'node example-app',
+    {
+      defaultGroup: 'users',
+      groups: [{
+        name: 'users',
+        label: 'Users',
+        defaultCommand: 'list',
+        commands: [
+          { name: 'show', description: 'Show user' },
+          { name: 'list', description: 'List users' }
+        ]
+      }, {
+        name: 'util',
+        label: 'Utilities',
+        commands: [
+          { name: 'fix', description: 'Fix things' },
+          { name: 'break', description: 'Break things' }
+        ]
+      }],
+      handlers: {
+        users: {
+          show: echoArgsHandler,
+          list: echoArgsHandler
+        },
+        util: {
+          fix: echoArgsHandler,
+          break: echoArgsHandler
+        }
+      }
+    }
+  )
+  t.deepEqual(response.args, {})
+  t.deepEqual(response.positional, { commands: ['users', 'list'] })
+})
+
+test('shows app version', async t => {
+  t.plan(1)
+  try {
+    const response = spawn(
+      './examples/single-command/cli.js',
+      ['--version']
+    )
+    const output = await getOutput(response.childProcess.stdout)
+    await response
+    t.is(output.trim(), '0.0.0')
+  } catch (error) {
+    t.fail()
+  }
+})
+
+test('shows help', async t => {
+  t.plan(2)
+  const { output, exitCode } = await testCli(
+    'node example-app --help',
+    { handlers: echoArgsHandler }
+  )
+  const expected = dedent`
+  Usage: example-app [options]
+
+  Options
+    --help     Show usage
+    --version  Show version
+  `
+  t.is(expected, output)
+  t.is(exitCode, 1)
+})
+
 test('shows help on error', async t => {
   t.plan(2)
   const { exitCode, output } = await testCli(
@@ -304,23 +469,6 @@ test('shows help on error', async t => {
     \`command\` argument is required
   `
   t.is(output, expected)
-  t.is(exitCode, 1)
-})
-
-test('shows help', async t => {
-  t.plan(2)
-  const { output, exitCode } = await testCli(
-    'node example-app --help',
-    { handlers: echoArgsHandler }
-  )
-  const expected = dedent`
-  Usage: example-app [options]
-
-  Options
-    --help     Show usage
-    --version  Show version
-  `
-  t.is(expected, output)
   t.is(exitCode, 1)
 })
 
@@ -513,10 +661,10 @@ test('shows help for specific command in command group', async t => {
   t.is(exitCode, 1)
 })
 
-test('runs default command', async t => {
+test('shows help with default command', async t => {
   t.plan(2)
-  const { response } = await testCli(
-    'node example-app',
+  const { output, exitCode } = await testCli(
+    'node example-app --help',
     {
       defaultCommand: 'show',
       commands: [
@@ -529,51 +677,26 @@ test('runs default command', async t => {
       }
     }
   )
-  t.deepEqual(response.args, {})
-  t.deepEqual(response.positional, { commands: ['show'] })
+
+  const expected = dedent`
+  Usage: example-app <command> [options]
+
+  Commands
+    example-app show  Show things (default)
+    example-app list  List things
+
+  Options
+    --help     Show usage
+    --version  Show version
+  `
+  t.is(output, expected)
+  t.is(exitCode, 1)
 })
 
-test('runs default command in group', async t => {
+test('shows help with default command group', async t => {
   t.plan(2)
-  const { response } = await testCli(
-    'node example-app util',
-    {
-      groups: [{
-        name: 'users',
-        label: 'Users',
-        commands: [
-          { name: 'show', description: 'Show user' },
-          { name: 'list', description: 'List users' }
-        ]
-      }, {
-        name: 'util',
-        label: 'Utilities',
-        defaultCommand: 'break',
-        commands: [
-          { name: 'fix', description: 'Fix things' },
-          { name: 'break', description: 'Break things' }
-        ]
-      }],
-      handlers: {
-        users: {
-          show: echoArgsHandler,
-          list: echoArgsHandler
-        },
-        util: {
-          fix: echoArgsHandler,
-          break: echoArgsHandler
-        }
-      }
-    }
-  )
-  t.deepEqual(response.args, {})
-  t.deepEqual(response.positional, { commands: ['util', 'break'] })
-})
-
-test('runs command in default group', async t => {
-  t.plan(2)
-  const { response } = await testCli(
-    'node example-app break',
+  const { output, exitCode } = await testCli(
+    'node example-app --help',
     {
       defaultGroup: 'util',
       groups: [{
@@ -586,7 +709,6 @@ test('runs command in default group', async t => {
       }, {
         name: 'util',
         label: 'Utilities',
-        defaultCommand: 'break',
         commands: [
           { name: 'fix', description: 'Fix things' },
           { name: 'break', description: 'Break things' }
@@ -604,46 +726,46 @@ test('runs command in default group', async t => {
       }
     }
   )
-  t.deepEqual(response.args, {})
-  t.deepEqual(response.positional, { commands: ['util', 'break'] })
+
+  const expected = dedent`
+  Usage: example-app <group> <command> [options]
+
+  Commands
+    Base
+      example-app fix    Fix things
+      example-app break  Break things
+    Users
+      example-app users show  Show user
+      example-app users list  List users
+
+  Options
+    --help     Show usage
+    --version  Show version
+  `
+  t.is(output, expected)
+  t.is(exitCode, 1)
 })
 
-test('runs default command in default group', async t => {
+test('shows help with description', async t => {
   t.plan(2)
-  const { response } = await testCli(
-    'node example-app',
+  const { output, exitCode } = await testCli(
+    'node example-app --help',
     {
-      defaultGroup: 'users',
-      groups: [{
-        name: 'users',
-        label: 'Users',
-        defaultCommand: 'list',
-        commands: [
-          { name: 'show', description: 'Show user' },
-          { name: 'list', description: 'List users' }
-        ]
-      }, {
-        name: 'util',
-        label: 'Utilities',
-        commands: [
-          { name: 'fix', description: 'Fix things' },
-          { name: 'break', description: 'Break things' }
-        ]
-      }],
-      handlers: {
-        users: {
-          show: echoArgsHandler,
-          list: echoArgsHandler
-        },
-        util: {
-          fix: echoArgsHandler,
-          break: echoArgsHandler
-        }
-      }
+      handlers: echoArgsHandler,
+      description: 'An example app'
     }
   )
-  t.deepEqual(response.args, {})
-  t.deepEqual(response.positional, { commands: ['users', 'list'] })
+  const expected = dedent`
+  Usage: example-app [options]
+
+  An example app
+
+  Options
+    --help     Show usage
+    --version  Show version
+  `
+  t.is(expected, output)
+  t.is(exitCode, 1)
 })
 
 test('errors when handler throws error', async t => {
@@ -953,113 +1075,6 @@ test('errors when command group is missing', async t => {
     \`command\` argument is required
   `
   t.is(output, expected)
-  t.is(exitCode, 1)
-})
-
-test('shows help with default command', async t => {
-  t.plan(2)
-  const { output, exitCode } = await testCli(
-    'node example-app --help',
-    {
-      defaultCommand: 'show',
-      commands: [
-        { name: 'show', description: 'Show things' },
-        { name: 'list', description: 'List things' }
-      ],
-      handlers: {
-        show: echoArgsHandler,
-        list: echoArgsHandler
-      }
-    }
-  )
-
-  const expected = dedent`
-  Usage: example-app <command> [options]
-
-  Commands
-    example-app show  Show things (default)
-    example-app list  List things
-
-  Options
-    --help     Show usage
-    --version  Show version
-  `
-  t.is(output, expected)
-  t.is(exitCode, 1)
-})
-
-test('shows help with default command group', async t => {
-  t.plan(2)
-  const { output, exitCode } = await testCli(
-    'node example-app --help',
-    {
-      defaultGroup: 'util',
-      groups: [{
-        name: 'users',
-        label: 'Users',
-        commands: [
-          { name: 'show', description: 'Show user' },
-          { name: 'list', description: 'List users' }
-        ]
-      }, {
-        name: 'util',
-        label: 'Utilities',
-        commands: [
-          { name: 'fix', description: 'Fix things' },
-          { name: 'break', description: 'Break things' }
-        ]
-      }],
-      handlers: {
-        users: {
-          show: echoArgsHandler,
-          list: echoArgsHandler
-        },
-        util: {
-          fix: echoArgsHandler,
-          break: echoArgsHandler
-        }
-      }
-    }
-  )
-
-  const expected = dedent`
-  Usage: example-app <group> <command> [options]
-
-  Commands
-    Base
-      example-app fix    Fix things
-      example-app break  Break things
-    Users
-      example-app users show  Show user
-      example-app users list  List users
-
-  Options
-    --help     Show usage
-    --version  Show version
-  `
-  t.is(output, expected)
-  t.is(exitCode, 1)
-})
-
-test('shows help with description', async t => {
-  t.plan(2)
-  const { output, exitCode } = await testCli(
-    'node example-app --help',
-    {
-      handlers: echoArgsHandler,
-      description: 'An example app'
-    }
-  )
-  const expected = dedent`
-  Usage: example-app [options]
-
-  An example app
-
-  Options
-    --help     Show usage
-    --version  Show version
-  `
-  t.is(expected, output)
   t.is(exitCode, 1)
 })
 
@@ -1777,32 +1792,21 @@ test('errors when multiple required options are missing for command in command g
   t.is(expected, output)
 })
 
-test('shows app version', async t => {
-  t.plan(1)
-  try {
-    const response = spawn(
-      './examples/single-command/cli.js',
-      ['--version']
-    )
-    const output = await getOutput(response.childProcess.stdout)
-    await response
-    t.is(output.trim(), '0.0.0')
-  } catch (error) {
-    t.fail()
-  }
-})
-
 test.todo('accepts input from environment based on prefix')
 
 test.todo('accepts input from environment based on name')
 
 test.todo('shows help with hidden commands')
 
-test.todo('shows help with hidden options')
+test.todo('shows help with hidden command groups')
 
 test.todo('shows help with hidden commands in command group')
 
-test.todo('shows help with hidden options in command group')
+test.todo('shows help with hidden option')
+
+test.todo('shows help with hidden command option')
+
+test.todo('shows help with hidden command option in command group')
 
 test.todo('runs with positional arguments')
 
