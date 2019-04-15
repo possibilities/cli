@@ -1785,19 +1785,7 @@ test('errors when multiple required options are missing for command in command g
   t.is(expected, output)
 })
 
-test.todo('shows help with long descriptions and names')
-
 test.todo('accepts input from config file')
-
-test.todo('configures via object')
-
-test.todo('configures via json file')
-
-test.todo('configures via yaml file')
-
-test.todo('configures via json string')
-
-test.todo('configures via yaml string')
 
 test.todo('shows help with hidden commands')
 
@@ -1832,3 +1820,5 @@ test.todo('shows app version')
 test.todo('shows recommended commands')
 
 test.todo('shows completion script')
+
+test.todo('shows help with long descriptions and names')
