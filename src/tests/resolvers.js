@@ -1,13 +1,26 @@
 const test = require('ava')
-const { testCli } = require('./_helpers')
+const dedent = require('dedent')
+const { spawn } = require('child-process-promise')
 
-const echoArgsHandler = (args, positional) => ({ args, positional })
+const getOutput = stream => new Promise(resolve => {
+  const chunks = []
+  stream.on('data', chunk => chunks.push(chunk))
+  stream.on('end', () => resolve(chunks.join('')))
+})
 
 test('loads handlers from filesystem', async t => {
   t.plan(1)
-  const { response } =
-    await testCli('node example-app', {}, { handlers: echoArgsHandler })
-  t.deepEqual(response.args, {})
+  try {
+    const response = spawn(
+      './examples/single-command/cli.js',
+      ['show', '--name', 'foo']
+    )
+    const output = await getOutput(response.childProcess.stdout)
+    await response
+    t.is(output.trim(), 'showing foo!')
+  } catch (error) {
+    t.fail()
+  }
 })
 
 test.todo('loads command handlers with from filesystem')
