@@ -6,7 +6,7 @@ const camelCase = require('lodash/camelCase')
 const flatten = require('lodash/flatten')
 const partition = require('lodash/partition')
 const isFunction = require('lodash/isFunction')
-const createShowUsage = require('./createShowUsage')
+const configureShowUsage = require('./showUsage')
 
 const invokeCommand = async (
   config,
@@ -293,7 +293,7 @@ module.exports = async (config) => {
 
   // The "show usage" function returns different output at differnet
   // stages. This initial helper displays data from the raw args and config.
-  const showPreResolveUsage = createShowUsage(
+  const showPreResolveUsage = configureShowUsage(
     args,
     appConfig,
     appProcess,
@@ -323,7 +323,7 @@ module.exports = async (config) => {
   }
 
   // Create an update helper for showing usuage with resolved args/config
-  const showUsage = createShowUsage(
+  const showUsage = configureShowUsage(
     resolvedArgs,
     resolvedConfig,
     appProcess,
