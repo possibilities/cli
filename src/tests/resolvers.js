@@ -8,23 +8,44 @@ const getOutput = stream => new Promise(resolve => {
   stream.on('end', () => resolve(chunks.join('')))
 })
 
-test('loads handlers from filesystem', async t => {
+test('loads single command from filesystem', async t => {
   t.plan(1)
   try {
     const response = spawn(
       './examples/single-command/cli.js',
-      ['show', '--name', 'foo']
+      ['--name', 'foo']
     )
     const output = await getOutput(response.childProcess.stdout)
     await response
-    t.is(output.trim(), 'showing foo!')
+    t.is(output.trim(), 'single command: showing foo!')
   } catch (error) {
     t.fail()
   }
 })
 
-test.todo('loads command handlers with from filesystem')
+test('loads multiple commands from filesystem', async t => {
+  t.plan(2)
+  try {
+    const response1 = spawn(
+      './examples/multiple-commands/cli.js',
+      ['show', '--name', 'foo']
+    )
+    const output1 = await getOutput(response1.childProcess.stdout)
+    await response1
+    t.is(output1.trim(), 'multiple commands: showing foo!')
 
-test.todo('loads command group handlers with from filesystem')
+    const response2 = spawn(
+      './examples/multiple-commands/cli.js',
+      ['list']
+    )
+    const output2 = await getOutput(response2.childProcess.stdout)
+    await response2
+    t.is(output2.trim(), 'multiple commands: listing things!')
+  } catch (error) {
+    t.fail()
+  }
+})
 
-test.todo('loads handlers with custom loader')
+test.todo('loads command group from filesystem')
+
+test.todo('loads commands with custom loader')

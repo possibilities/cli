@@ -251,7 +251,7 @@ const prepareConfig = (config, args) => {
 const loadHandlers = config => {
   const handlers = {}
   if (!config.commands && !config.groups) {
-    handlers = require(config.handlersRoot)
+    return require(config.handlersRoot)
   }
   if (config.commands) {
     config.commands.forEach(command => {
