@@ -1824,7 +1824,7 @@ test('errors when multiple required options are missing for command in command g
   t.is(expected, output)
 })
 
-test.only('shows app version', async t => {
+test('shows app version', async t => {
   t.plan(1)
   try {
     const response = spawn(
