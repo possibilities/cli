@@ -34,6 +34,7 @@ CLIs are effectively one or more "handler" functions. This library aims to free 
            {
              name: 'name',
              description: 'Name of thing',
+             required: true
            }
          ]
        },

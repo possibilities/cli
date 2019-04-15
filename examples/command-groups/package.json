@@ -1,0 +1,6 @@
+{
+  "name": "my-cli",
+  "bin": {
+    "my-cli": "./cli.js"
+  }
+}

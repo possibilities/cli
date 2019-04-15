@@ -1,3 +1,4 @@
+const { join } = require('path')
 const has = require('lodash/has')
 const omit = require('lodash/omit')
 const difference = require('lodash/difference')
@@ -235,6 +236,7 @@ const prepareConfig = (config, args) => {
   // Build up a list of possible options and include common items such
   // as `--help` and `--version`
   const appOptions = findActiveOptions(config, args)
+    .map(option => ({ ...option, type: option.type || 'string' }))
   const options = [ ...appOptions, helpOption ]
 
   // Build a list of expected positional items.
@@ -246,14 +248,34 @@ const prepareConfig = (config, args) => {
   return { ...config, positional, options }
 }
 
-module.exports = async (
-  config,
-  {
-    handlers,
+const loadHandlers = config => {
+  const handlers = {}
+  if (!config.commands && !config.groups) {
+    return require(config.handlersRoot)
+  }
+  if (config.commands) {
+    config.commands.forEach(command => {
+      handlers[command.name] = require(join(config.handlersRoot, command.name))
+    })
+  }
+  if (config.groups) {
+    config.groups.forEach(group => {
+      handlers[group.name] = {}
+      group.commands.forEach(command => {
+        handlers[group.name][command.name] =
+          require(join(config.handlersRoot, group.name, command.name) + '.js')
+      })
+    })
+  }
+  return handlers
+}
+
+module.exports = async (config) => {
+  const {
     appProcess = process,
     appConsole = console
-  }
-) => {
+  } = config
+
   const args = parseArgs(appProcess.argv)
   const appConfig = prepareConfig(config, args)
 
@@ -297,8 +319,10 @@ module.exports = async (
     return showUsage(postValidationErrors)
   }
 
+  const resolvedHandlers = config.handlers || loadHandlers(config)
+
   // Find the handler and invoke it
-  const handler = resolveHandler(resolvedArgs, handlers)
+  const handler = resolveHandler(resolvedArgs, resolvedHandlers)
   try {
     const response = await invokeCommand(
       resolvedConfig,
