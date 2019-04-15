@@ -1785,7 +1785,11 @@ test('errors when multiple required options are missing for command in command g
   t.is(expected, output)
 })
 
-test.todo('accepts input from config file')
+test.todo('shows app version')
+
+test.todo('accepts input from environment based on prefix')
+
+test.todo('accepts input from environment based on name')
 
 test.todo('shows help with hidden commands')
 
@@ -1811,11 +1815,7 @@ test.todo('shows help with epilogue in command group')
 
 test.todo('shows help with examples in command group')
 
-test.todo('accepts input from environment based on prefix')
-
-test.todo('accepts input from environment based on name')
-
-test.todo('shows app version')
+test.todo('accepts input from config file')
 
 test.todo('shows recommended commands')
 
