@@ -82,7 +82,7 @@ CLIs are effectively one or more "handler" functions. This library aims to free 
 
 1. Link package for development
 
-   To make your binary available during development it needs to be linked "globally". At the time of this writing `yarn` appears [unable to accomplish this](https://github.com/yarnpkg/yarn/issues/891#issuecomment-285776748) so we recommend using `npm`'s link command to create the appropriate symbolic link while developing your CLI.
+   To make your binary available during development it needs to be linked "globally". At the time of this writing `yarn` appears [unable to accomplish this](https://github.com/yarnpkg/yarn/issues/891#issuecomment-285776748)† so we recommend using `npm`'s link command to create the appropriate symbolic link while developing your CLI.
 
    ```Shell
    npm link . && rm ./package-lock.json
@@ -127,3 +127,7 @@ TODO
 ## Inspiration
 
 This library is heavily inspired by years of using [`yargs`](https://github.com/yargs/yargs/blob/master/docs/api.md). I maintain many CLI applications that previously contained ~100+ lines of boilerplate to achieve the UI/UX provided by this library. There is nothing here that can't be done with `yargs` and for many it is more appropriate as `yargs` can be configured to behave in almost any way you can imagine.
+
+## Footnotes
+
+† If you know a solution to this please [let me know](mailto:mikebannister@gmail.com)
