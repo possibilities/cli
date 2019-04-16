@@ -1904,10 +1904,6 @@ test('accepts command option in command group from environment based on name', a
   }
 })
 
-test.todo('accepts command option option from environment based on name')
-
-test.todo('accepts option in command group from environment based on name')
-
 test.todo('shows help with hidden commands')
 
 test.todo('shows help with hidden command groups')
