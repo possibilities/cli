@@ -1792,9 +1792,121 @@ test('errors when multiple required options are missing for command in command g
   t.is(expected, output)
 })
 
-test.todo('accepts input from environment based on prefix')
+test('accepts option from environment based on prefix', async t => {
+  t.plan(1)
+  try {
+    const response = spawn(
+      './examples/single-command/cli.js',
+      [],
+      { env: { ...process.env, MY_CLI_NAME: 'foo from env' } }
+    )
+    const output = await getOutput(response.childProcess.stdout)
+    await response
+    t.is(output.trim(), 'single command: showing foo from env!')
+  } catch (error) {
+    t.fail()
+  }
+})
 
-test.todo('accepts input from environment based on name')
+test('accepts command option from environment based on prefix', async t => {
+  t.plan(2)
+  try {
+    const response1 = spawn(
+      './examples/multiple-commands/cli.js',
+      ['show'],
+      { env: { ...process.env, MY_CLI_NAME: 'bar from env' } }
+    )
+    const output1 = await getOutput(response1.childProcess.stdout)
+    await response1
+    t.is(output1.trim(), 'multiple commands: showing bar from env!')
+
+    const response2 = spawn(
+      './examples/multiple-commands/cli.js',
+      ['list']
+    )
+    const output2 = await getOutput(response2.childProcess.stdout)
+    await response2
+    t.is(output2.trim(), 'multiple commands: listing things!')
+  } catch (error) {
+    t.fail()
+  }
+})
+
+test('accepts command option in command group from environment based on prefix', async t => {
+  t.plan(1)
+  try {
+    const response1 = spawn(
+      './examples/command-groups/cli.js',
+      ['users', 'show'],
+      { env: { ...process.env, MY_CLI_NAME: 'fuff from env' } }
+    )
+    const output1 = await getOutput(response1.childProcess.stdout)
+    await response1
+    t.is(output1.trim(), 'command groups: showing fuff from env user!')
+  } catch (error) {
+    t.fail()
+  }
+})
+
+test('accepts option from environment based on name', async t => {
+  t.plan(1)
+  try {
+    const response = spawn(
+      './examples/single-command/cli.js',
+      [],
+      { env: { ...process.env, EXPLICIT_NAME: 'foo from env' } }
+    )
+    const output = await getOutput(response.childProcess.stdout)
+    await response
+    t.is(output.trim(), 'single command: showing foo from env!')
+  } catch (error) {
+    t.fail()
+  }
+})
+
+test('accepts command option from environment based on name', async t => {
+  t.plan(2)
+  try {
+    const response1 = spawn(
+      './examples/multiple-commands/cli.js',
+      ['show'],
+      { env: { ...process.env, EXPLICIT_NAME: 'bar from env' } }
+    )
+    const output1 = await getOutput(response1.childProcess.stdout)
+    await response1
+    t.is(output1.trim(), 'multiple commands: showing bar from env!')
+
+    const response2 = spawn(
+      './examples/multiple-commands/cli.js',
+      ['list']
+    )
+    const output2 = await getOutput(response2.childProcess.stdout)
+    await response2
+    t.is(output2.trim(), 'multiple commands: listing things!')
+  } catch (error) {
+    t.fail()
+  }
+})
+
+test('accepts command option in command group from environment based on name', async t => {
+  t.plan(1)
+  try {
+    const response1 = spawn(
+      './examples/command-groups/cli.js',
+      ['users', 'show'],
+      { env: { ...process.env, EXPLICIT_NAME: 'fuff from env' } }
+    )
+    const output1 = await getOutput(response1.childProcess.stdout)
+    await response1
+    t.is(output1.trim(), 'command groups: showing fuff from env user!')
+  } catch (error) {
+    t.fail()
+  }
+})
+
+test.todo('accepts command option option from environment based on name')
+
+test.todo('accepts option in command group from environment based on name')
 
 test.todo('shows help with hidden commands')
 

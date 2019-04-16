@@ -22,9 +22,12 @@ const invokeCommand = async (
   return handler(omit(options, systemNames), context)
 }
 
-const parseArgs = argv => {
+// TODO this function has grown into a pile. It would be good to break it up
+// into sane "stages". E.g. 1) accumulate full context 2) reduce down to
+// smaller, directly useful, context
+const parseInput = (config, { env, argv }) => {
   let commands = []
-  const options = {}
+  const inputOptions = {}
   const [negArgs, posArgs] =
     partition(argv.slice(2), a => a.startsWith('--no-'))
   const args = [
@@ -36,11 +39,11 @@ const parseArgs = argv => {
     const arg = args.pop()
     if (!arg) break
     if (arg.startsWith('-')) {
-      options[camelCase(arg)] = undefined
+      inputOptions[camelCase(arg)] = undefined
     } else {
       const previousArg = args[args.length - 1]
       if (previousArg && previousArg.startsWith('-')) {
-        options[camelCase(previousArg)] = arg
+        inputOptions[camelCase(previousArg)] = arg
         args.pop()
       } else {
         commands = [arg, ...commands]
@@ -48,7 +51,33 @@ const parseArgs = argv => {
     }
   }
 
-  return { commands, options }
+  // Build up a list of possible options and include common items such
+  // as `--help` and `--version`
+  const appOptions = findActiveOptions(
+    config,
+    { commands, options: inputOptions }
+  )
+
+  const envOptions = parseEnvironment(config, appOptions, env)
+  const appArgs = {
+    commands,
+    options: {
+      ...envOptions,
+      ...inputOptions
+    }
+  }
+
+  const options = [ ...appOptions, ...systemOptions ]
+
+  // Build a list of expected positional items.
+  // TODO support additional positional items after group/command
+  const positional = config.groups
+    ? [{ name: 'group' }, { name: 'command' }]
+    : config.commands ? [{ name: 'command' }] : []
+
+  const appConfig = { ...config, positional, options }
+
+  return { config: appConfig, args: appArgs }
 }
 
 const validateInputs = (config, args) => {
@@ -144,7 +173,10 @@ const findActiveOptions = (config, args) => {
       }
     }
   }
-  return options
+  return options.map(option => ({
+    ...option,
+    type: option.type || 'string'
+  }))
 }
 
 const resolveHandler = (args, handlers) => {
@@ -239,22 +271,6 @@ const systemOptions = [
   }
 ]
 
-const prepareConfig = (config, args) => {
-  // Build up a list of possible options and include common items such
-  // as `--help` and `--version`
-  const appOptions = findActiveOptions(config, args)
-    .map(option => ({ ...option, type: option.type || 'string' }))
-  const options = [ ...appOptions, ...systemOptions ]
-
-  // Build a list of expected positional items.
-  // TODO support additional positional items after group/command
-  const positional = config.groups
-    ? [{ name: 'group' }, { name: 'command' }]
-    : config.commands ? [{ name: 'command' }] : []
-
-  return { ...config, positional, options }
-}
-
 const loadHandlers = config => {
   const handlers = {}
   if (!config.commands && !config.groups) {
@@ -282,14 +298,31 @@ const showVersion = appRoot => {
   console.info(version)
 }
 
+const parseEnvironment = (config, options, env) => {
+  if (!config.environmentPrefix) return {}
+  const fullPrefix = config.environmentPrefix + '_'
+  const args = {}
+  Object.keys(env)
+    .filter(key => key.startsWith(fullPrefix))
+    .forEach(key => {
+      args[camelCase(key.slice(fullPrefix.length))] = env[key]
+    })
+  options
+    .filter(option => !!option.environmentName)
+    .filter(option => !!env[option.environmentName])
+    .forEach(option => {
+      args[option.name] = env[option.environmentName]
+    })
+  return args
+}
+
 module.exports = async (config) => {
   const {
     appProcess = process,
     appConsole = console
   } = config
 
-  const args = parseArgs(appProcess.argv)
-  const appConfig = prepareConfig(config, args)
+  const { args, config: appConfig } = parseInput(config, appProcess)
 
   // The "show usage" function returns different output at differnet
   // stages. This initial helper displays data from the raw args and config.
