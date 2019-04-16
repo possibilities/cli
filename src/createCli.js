@@ -2,6 +2,7 @@ const { join } = require('path')
 const has = require('lodash/has')
 const omit = require('lodash/omit')
 const difference = require('lodash/difference')
+const kebabCase = require('lodash/kebabCase')
 const camelCase = require('lodash/camelCase')
 const flatten = require('lodash/flatten')
 const partition = require('lodash/partition')
@@ -43,11 +44,11 @@ const parseInput = (config, { env, argv }) => {
     const arg = args.pop()
     if (!arg) break
     if (arg.startsWith('-')) {
-      inputOptions[camelCase(arg)] = undefined
+      inputOptions[kebabCase(arg)] = undefined
     } else {
       const previousArg = args[args.length - 1]
       if (previousArg && previousArg.startsWith('-')) {
-        inputOptions[camelCase(previousArg)] = arg
+        inputOptions[kebabCase(previousArg)] = arg
         args.pop()
       } else {
         commands = [arg, ...commands]
@@ -188,7 +189,7 @@ const resolveHandler = (args, handlers) => {
 
   let handler = handlers
   for (const command of args.commands) {
-    handler = handler[camelCase(command)]
+    handler = handler[camelCase(command)] || handler[kebabCase(command)]
   }
 
   return handler
@@ -250,7 +251,7 @@ const resolveInputs = (config, args) => {
   }
 }
 
-const preValidationValidation = (config, args) => {
+const validatePreResolveInput = (config, args) => {
   const inputOptionNames = Object.keys(args.options)
   const optionNames = config.options.map(o => o.name)
   const extraOptions = difference(inputOptionNames, optionNames)
@@ -309,7 +310,7 @@ const parseEnvironment = (config, options, env) => {
   Object.keys(env)
     .filter(key => key.startsWith(fullPrefix))
     .forEach(key => {
-      args[camelCase(key.slice(fullPrefix.length))] = env[key]
+      args[kebabCase(key.slice(fullPrefix.length))] = env[key]
     })
   options
     .filter(option => !!option.environmentName)
@@ -338,9 +339,9 @@ module.exports = async (config) => {
   )
 
   // Make an inital pass at validation
-  const preValidationErrors = preValidationValidation(appConfig, args)
-  if (preValidationErrors.length) {
-    return showPreResolveUsage(preValidationErrors)
+  const preResolveErrors = validatePreResolveInput(appConfig, args)
+  if (preResolveErrors.length) {
+    return showPreResolveUsage(preResolveErrors)
   }
 
   // Make changes to args and config prior to invoking command
