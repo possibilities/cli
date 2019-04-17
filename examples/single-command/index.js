@@ -1,1 +1,5 @@
-module.exports = ({ name }) => console.info(`single command: showing ${name}!`)
+module.exports = (x) => {
+  const { firstName } = x
+  console.log(x)
+  console.info(`single command: showing ${firstName}!`)
+}

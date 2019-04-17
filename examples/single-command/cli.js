@@ -6,10 +6,10 @@ createCli({
   description: 'My cli',
   environmentPrefix: 'MY_CLI',
   options: [{
-    name: 'name',
-    description: 'Name of thing',
+    name: 'first-name',
+    description: 'First name of user',
     required: true,
-    environmentName: 'EXPLICIT_NAME'
+    environmentName: 'EXPLICIT_FIRST_NAME'
   }],
   handlersRoot: __dirname
 })

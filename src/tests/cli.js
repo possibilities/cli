@@ -1792,13 +1792,13 @@ test('errors when multiple required options are missing for command in command g
   t.is(expected, output)
 })
 
-test('accepts option from environment based on prefix', async t => {
+test.only('accepts option from environment based on prefix', async t => {
   t.plan(1)
   try {
     const response = spawn(
       './examples/single-command/cli.js',
       [],
-      { env: { ...process.env, MY_CLI_NAME: 'foo from env' } }
+      { env: { ...process.env, MY_CLI_FIRST_NAME: 'foo from env' } }
     )
     const output = await getOutput(response.childProcess.stdout)
     await response
@@ -1808,7 +1808,7 @@ test('accepts option from environment based on prefix', async t => {
   }
 })
 
-test('accepts command option from environment based on prefix', async t => {
+test.skip('accepts command option from environment based on prefix', async t => {
   t.plan(2)
   try {
     const response1 = spawn(
@@ -1832,7 +1832,7 @@ test('accepts command option from environment based on prefix', async t => {
   }
 })
 
-test('accepts command option in command group from environment based on prefix', async t => {
+test.skip('accepts command option in command group from environment based on prefix', async t => {
   t.plan(1)
   try {
     const response1 = spawn(
@@ -1848,7 +1848,7 @@ test('accepts command option in command group from environment based on prefix',
   }
 })
 
-test('accepts option from environment based on name', async t => {
+test.skip('accepts option from environment based on name', async t => {
   t.plan(1)
   try {
     const response = spawn(
@@ -1864,7 +1864,7 @@ test('accepts option from environment based on name', async t => {
   }
 })
 
-test('accepts command option from environment based on name', async t => {
+test.skip('accepts command option from environment based on name', async t => {
   t.plan(2)
   try {
     const response1 = spawn(
@@ -1888,7 +1888,7 @@ test('accepts command option from environment based on name', async t => {
   }
 })
 
-test('accepts command option in command group from environment based on name', async t => {
+test.skip('accepts command option in command group from environment based on name', async t => {
   t.plan(1)
   try {
     const response1 = spawn(

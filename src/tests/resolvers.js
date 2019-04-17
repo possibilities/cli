@@ -7,7 +7,7 @@ const getOutput = stream => new Promise(resolve => {
   stream.on('end', () => resolve(chunks.join('')))
 })
 
-test('loads single command from filesystem', async t => {
+test.skip('loads single command from filesystem', async t => {
   t.plan(1)
   try {
     const response = spawn(
@@ -22,7 +22,7 @@ test('loads single command from filesystem', async t => {
   }
 })
 
-test('loads multiple commands from filesystem', async t => {
+test.skip('loads multiple commands from filesystem', async t => {
   t.plan(2)
   try {
     const response1 = spawn(
@@ -45,7 +45,7 @@ test('loads multiple commands from filesystem', async t => {
   }
 })
 
-test('loads command group from filesystem', async t => {
+test.skip('loads command group from filesystem', async t => {
   t.plan(4)
   try {
     const response1 = spawn(

@@ -12,19 +12,19 @@ createCli({
       commands: [
         {
           name: 'show',
-          description: 'Show thing',
+          description: 'Show user',
           options: [
             {
-              name: 'name',
-              description: 'Name of thing',
+              name: 'first-name',
+              description: 'First name of user',
               required: true,
-              environmentName: 'EXPLICIT_NAME'
+              environmentName: 'EXPLICIT_FIRST_NAME'
             }
           ]
         },
         {
           name: 'list',
-          description: 'List things'
+          description: 'List users'
         }
       ]
     },
