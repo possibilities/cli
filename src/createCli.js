@@ -8,6 +8,10 @@ const partition = require('lodash/partition')
 const isFunction = require('lodash/isFunction')
 const configureShowUsage = require('./showUsage')
 
+// Note at the time of this writing this module is a giant pile that was driven
+// out with tests. So the behavior is good but needs lots of work before
+// it can be worked with by reasonable people.
+
 const invokeCommand = async (
   config,
   args,
